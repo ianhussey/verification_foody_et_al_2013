@@ -1,0 +1,19 @@
+﻿outcome,timepoint,condition,extracted_mean,extracted_interval_width,reported_n,reported_difference_score,notes
+discomfort,baseline,distinction (black dashed),11,8,18,,"note that article lists both conditions merely as ""<11"" at baseline. "
+discomfort,baseline,hierarchy (grey solid) ,7,9,18,,"note that article lists both conditions merely as ""<11"" at baseline. "
+discomfort,post induction,distinction (black dashed),24,8,18,12.7,
+discomfort,post induction,hierarchy (grey solid) ,23,9,18,16.3,
+discomfort,post intervention,distinction (black dashed),25,8,18,0.76,
+discomfort,post intervention,hierarchy (grey solid) ,16,9,18,-7.57,"note that article lists both conditions merely as ""<10"" at baseline"
+anxiety,baseline,distinction (black dashed),10,11.25,18,,"note that article lists both conditions merely as ""<10"" at baseline"
+anxiety,baseline,hierarchy (grey solid) ,7,11.25,18,,
+anxiety,post induction,distinction (black dashed),18,11.25,18,8.06,
+anxiety,post induction,hierarchy (grey solid) ,21,11.25,18,13.57,
+anxiety,post intervention,distinction (black dashed),18,11.25,18,-0.03,
+anxiety,post intervention,hierarchy (grey solid) ,17,11.25,18,-3.86,
+stress,baseline,distinction (black dashed),9,10,18,,"note that article lists both conditions merely as ""<11"" at baseline"
+stress,baseline,hierarchy (grey solid) ,11,9,18,,"note that article lists both conditions merely as ""<11"" at baseline"
+stress,post induction,distinction (black dashed),17,10,18,7.43,
+stress,post induction,hierarchy (grey solid) ,21,9,18,9.48,
+stress,post intervention,distinction (black dashed),22,10,18,4.71,
+stress,post intervention,hierarchy (grey solid) ,12,9,18,-8.82,
