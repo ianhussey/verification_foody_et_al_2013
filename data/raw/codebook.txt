@@ -1,8 +1,0 @@
-
-Reextracted manually extracted from figures 1, 2, and 3 by taking screenshots of the figures, then drawing horizontal lines to the axis, and using halved lines to estimate increments on the scales. 
-
-Note that all interval widths were re-estimated from the plots for the post intervention condition only: ie the key comparison. Values at this timepoint were then used for the other two timepoints in the csv file as well (I don't expect to use them so lower precise was acceptable). NB I employed a liberal estimate of interval width, the actual values were probably slightly wider. More liberal estimate means observed p values will be smaller than true values, favouring Foody et al.'s (2013) conclusions.
-
-Difference scores reported in the manuscript between each timepoint and the previous one. Note that no values were reported in the manuscript for the baseline conditions, only that both conditions were smaller than a given value (e.g., ""<11""). This is what necessitated the reextraction of values from the plots.
-
-Given that the manuscript does not state if the intervals in the plots are Standard Errors or 95% Confidence Intervals, I calculate SD based on both possibilities.

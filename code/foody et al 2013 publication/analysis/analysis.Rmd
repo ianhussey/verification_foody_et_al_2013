@@ -1,0 +1,550 @@
+---
+title: "Analysis of Foody et al. (2013)"
+author: "Ian Hussey"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    code_folding: hide
+    highlight: haddock
+    theme: flatly
+    toc: yes
+    toc_float: yes
+---
+
+```{r, include=FALSE}
+
+knitr::opts_chunk$set(message = FALSE,
+                      warning = FALSE)
+
+```
+
+# Dependencies and functions
+
+```{r}
+
+# dependencies
+
+library(dplyr)
+library(readr)
+library(ggplot2)
+library(scales)
+library(knitr)
+library(kableExtra)
+library(janitor)
+library(forcats)
+
+# create director
+dir.create("plots/")
+dir.create("tables/")
+
+
+# functions
+
+#' Print p values to a given number of digits, always rounding up
+#' @param p: p value to be rounded
+#' @param digits: Number of digits to round to
+round_p <- function(p, digits = 3){
+  ceiling(as.numeric(p)*10^digits)/10^digits
+}
+
+
+#' Calculate an independent t test from summary statistics
+#' @source https://stats.stackexchange.com/q/30450. Improvements made to readability and documentation, added effect sizes.
+#' @param m1: the sample 1 mean
+#' @param m2: the sample 2 mean
+#' @param sd1: the sample 1 SD
+#' @param sd2: the sample 2 SD
+#' @param n1: the sample 2 sample size
+#' @param n2: the sample 2 sample size
+#' @param m0: the null value for the difference in means to be tested for. Default is 0. 
+#' @param equal.variance: whether or not to assume equal variance. Default is FALSE as in the base R t.test function, i.e., a Welch's t-test. Setting to TRUE will produce a Student's t-test.
+t_test_from_descriptives <- function(m1, m2, sd1, sd2, n1, n2, m0 = 0, equal.variance = FALSE) {
+  require(psych)
+  
+  if(equal.variance == FALSE) {
+    se <- sqrt( (sd1^2/n1) + (sd2^2/n2) )
+    # welch-satterthwaite df
+    df <- ( (sd1^2/n1 + sd2^2/n2)^2 )/( (sd1^2/n1)^2/(n1-1) + (sd2^2/n2)^2/(n2-1) )
+  } else {
+    # pooled standard deviation, scaled by the sample sizes
+    se <- sqrt( (1/n1 + 1/n2) * ((n1-1)*sd1^2 + (n2-1)*sd2^2)/(n1+n2-2) ) 
+    df <- n1+n2-2
+  } 
+  
+  t <- (m1 - m2 - m0)/se 
+  d <- (m1 - m2) / sqrt((sd1^2 + sd2^2)/2)
+  d_cis <- psych::cohen.d.ci(d, n2 = n2, n1 = n1, alpha = .05)
+  
+  g <- d * ( 1 - (3 / ((4*(n1 + n1 - 2)) - 1)) ) # https://stats.stackexchange.com/q/434978 by Wolfgang Vichtbauer, creator of metafor package
+  g_cis <- psych::cohen.d.ci(g, n2 = n2, n1 = n1, alpha = .05)
+  
+  dat <- data.frame(m1 = m1, 
+                    sd1 = sd1, 
+                    n1 = n1, 
+                    m2 = m2, 
+                    sd2 = sd2, 
+                    n2 = n2,
+                    mean_difference = m1 - m2,
+                    se = se,
+                    cohens_d = d,
+                    cohens_d_ci_lower = d_cis[1],
+                    cohens_d_ci_upper = d_cis[3],
+                    hedges_g = g,
+                    hedges_g_ci_lower = g_cis[1],
+                    hedges_g_ci_upper = g_cis[3],
+                    t = t, 
+                    df = df,
+                    p = 2 * pt(-abs(t), df))
+  
+  return(dat) 
+}
+
+round_all_but_p_values <- function(output, digits = 2){
+  require(dplyr)
+  
+  output |>
+    mutate(p = as.character(p)) |>
+    mutate_if(is.numeric, janitor::round_half_up, digits = 2)
+}
+
+```
+
+# Get data
+
+```{r}
+
+data_processed <- read_csv("../../../data/processed/foody et al 2013 publication/data_processed.csv") 
+
+sample_size <- data_processed |>
+  distinct(n) |>
+  pull(n)
+
+# check that length of sample size is 1, ie all are identical so this can be used as a numeric
+length(sample_size) == 1
+
+```
+
+# Corrected *p* values for RM-ANOVAs
+
+*p* values extracted from text and corrected via Holm corrections
+
+Foody et al. (2013) reported *p* values for their RM-ANOVAs' interaction effects of .45, .33, .04. Using Holm corrections for mutiple testing these would be:
+
+```{r}
+
+p.adjust(c(.45, .33, .04), method = "holm") |>
+  round_p()
+
+```
+
+# *t*-tests
+
+## Assuming CIs in plot are 95% CIs
+
+### Outcome measures reported in Foody et al. (2013)
+
+Adjusted p values via Holm corrections
+
+```{r fig.height=2, fig.width=5}
+
+es_assuming_ci <- 
+  bind_rows(
+    t_test_from_descriptives(
+      m1 = data_processed$mean[data_processed$outcome == "discomfort" & data_processed$condition == "distinction"],
+      m2 = data_processed$mean[data_processed$outcome == "discomfort" & data_processed$condition == "hierarchy"],
+      sd1 = data_processed$sd_assuming_ci[data_processed$outcome == "discomfort" & data_processed$condition == "distinction"],
+      sd2 = data_processed$sd_assuming_ci[data_processed$outcome == "discomfort" & data_processed$condition == "hierarchy"],
+      n1 = sample_size,
+      n2 = sample_size
+    ) |>
+      mutate(outcome_measure = "Discomfort"),
+    
+    t_test_from_descriptives(
+      m1 = data_processed$mean[data_processed$outcome == "anxiety" & data_processed$condition == "distinction"],
+      m2 = data_processed$mean[data_processed$outcome == "anxiety" & data_processed$condition == "hierarchy"],
+      sd1 = data_processed$sd_assuming_ci[data_processed$outcome == "anxiety" & data_processed$condition == "distinction"],
+      sd2 = data_processed$sd_assuming_ci[data_processed$outcome == "anxiety" & data_processed$condition == "hierarchy"],
+      n1 = sample_size,
+      n2 = sample_size
+    ) |>
+      mutate(outcome_measure = "Anxiety"),
+    
+    t_test_from_descriptives(
+      m1 = data_processed$mean[data_processed$outcome == "stress" & data_processed$condition == "distinction"],
+      m2 = data_processed$mean[data_processed$outcome == "stress" & data_processed$condition == "hierarchy"],
+      sd1 = data_processed$sd_assuming_ci[data_processed$outcome == "stress" & data_processed$condition == "distinction"],
+      sd2 = data_processed$sd_assuming_ci[data_processed$outcome == "stress" & data_processed$condition == "hierarchy"],
+      n1 = sample_size,
+      n2 = sample_size
+    ) |>
+      mutate(outcome_measure = "Stress")
+  ) |>
+  mutate(p_adjusted = p.adjust(p, method = "holm"),
+         hedges_g_se = (hedges_g_ci_upper - hedges_g_ci_lower)/(1.96*2)) |>
+  mutate(outcome_measure = fct_relevel(outcome_measure, "Stress", "Anxiety", "Discomfort")) |>
+  select(outcome_measure, 
+         m1,
+         sd1,
+         n1, 
+         m2,
+         sd2,
+         n2,
+         hedges_g, 
+         hedges_g_ci_lower, 
+         hedges_g_ci_upper, 
+         hedges_g_se,
+         t, 
+         df, 
+         p, 
+         p_adjusted)
+
+es_assuming_ci |>
+  select(outcome_measure,
+         m1,
+         sd1,
+         n1, 
+         m2,
+         sd2,
+         n2,
+         hedges_g, 
+         hedges_g_ci_lower, 
+         hedges_g_ci_upper, 
+         t, 
+         df, 
+         p, 
+         p_adjusted) |>
+  mutate(p = round_p(p),
+         p_adjusted = round_p(p_adjusted)) |>
+  round_all_but_p_values() |>
+  kable() |>
+  kable_classic(full_width = FALSE)
+
+```
+
+#### Pairwise comparisons of effect sizes
+
+Calculate Z scores for the difference between each pair of Hedges' *g* effect sizes
+
+```{r}
+
+z_discomfort_anxiety <- 
+  (es_assuming_ci$hedges_g[es_assuming_ci$outcome_measure == "Discomfort"] - es_assuming_ci$hedges_g[es_assuming_ci$outcome_measure == "Anxiety"]) /
+  sqrt(es_assuming_ci$hedges_g_se[es_assuming_ci$outcome_measure == "Discomfort"]^2 + es_assuming_ci$hedges_g_se[es_assuming_ci$outcome_measure == "Anxiety"]^2)
+
+z_discomfort_stress <- 
+  (es_assuming_ci$hedges_g[es_assuming_ci$outcome_measure == "Discomfort"] - es_assuming_ci$hedges_g[es_assuming_ci$outcome_measure == "Stress"]) /
+  sqrt(es_assuming_ci$hedges_g_se[es_assuming_ci$outcome_measure == "Discomfort"]^2 + es_assuming_ci$hedges_g_se[es_assuming_ci$outcome_measure == "Stress"]^2)
+
+z_anxiety_stress <- 
+  (es_assuming_ci$hedges_g[es_assuming_ci$outcome_measure == "Anxiety"] - es_assuming_ci$hedges_g[es_assuming_ci$outcome_measure == "Stress"]) /
+  sqrt(es_assuming_ci$hedges_g_se[es_assuming_ci$outcome_measure == "Anxiety"]^2 + es_assuming_ci$hedges_g_se[es_assuming_ci$outcome_measure == "Stress"]^2)
+
+p_discomfort_anxiety <- (1-pnorm(abs(z_discomfort_anxiety)))*2
+p_discomfort_stress  <- (1-pnorm(abs(z_discomfort_stress)))*2
+p_anxiety_stress     <- (1-pnorm(abs(z_anxiety_stress)))*2
+
+```
+
+Difference between outcome variables:
+
+- Discomfort vs. Anxiety $p$ = `r round_p(p_discomfort_anxiety)`
+- Discomfort vs. Stress $p$ = `r round_p(p_discomfort_stress)`
+- Anxiety vs. Stress $p$ = `r round_p(p_anxiety_stress)`
+
+### Average scores across the three DVs
+
+However, the above results produce conflicting results. Two produce significant results, one non-significant, and yet inspection of the plot clearly shows that these results no not differ from one another. I.e., the difference between significant and non-significant is not itself significant (Gelman, 2006). As such, it is difficult to know what to conclude, give that the hypothesis about differences between mean scores between the two groups applies equally to all three outcome measures.
+
+What to do? With access to the full dataset it would be possible to run a single MANOVA (although not advisable, see Huang, 2020, "MANOVA: A Procedure Whose Time Has Passed?"). With access to only the summary statistics reported in the paper, and given that the three outcome variables use the same 0 to 100 scale, an alternative is to simply create an average score for each participant. All things being equal, this should decrease measurement error, and therefore increase power to detect population effects. It also provides a single *p* value to test the single research question, thereby providing a clearer inference method. That is, Foody et al. (2013) are explicit that they are testing the differential impact of the interventions on "distress", and that they consider anxiety, discomfort and distress as indicators of distress. They therefore implicitly assert that distress is a latent variable with three observed indicators, which can therefore be combined (e.g., using the simplest measurement model: mean scores). Of course, the authors might disagree with this characterization of their measurement model, but this would be very difficult to square with their conclusions. If the three primary outcome variables *do not* represent indicators of an overarching latent variable (distress), then it would not be appropriate to make conclusions about distress, which Foody et al. (2013) do.
+
+```{r fig.height=2, fig.width=5.5}
+
+es_assuming_ci_pooled <- 
+  bind_rows(
+    es_assuming_ci,
+    t_test_from_descriptives(
+      m1 = mean(c(data_processed$mean[data_processed$outcome == "discomfort" & data_processed$condition == "distinction"],
+                data_processed$mean[data_processed$outcome == "anxiety" & data_processed$condition == "distinction"],
+                data_processed$mean[data_processed$outcome == "stress" & data_processed$condition == "distinction"])),
+      m2 = mean(c(data_processed$mean[data_processed$outcome == "discomfort" & data_processed$condition == "hierarchy"],
+                data_processed$mean[data_processed$outcome == "anxiety" & data_processed$condition == "hierarchy"],
+                data_processed$mean[data_processed$outcome == "stress" & data_processed$condition == "hierarchy"])),
+      sd1 = sqrt((data_processed$sd_assuming_ci[data_processed$outcome == "discomfort" & data_processed$condition == "distinction"]^2 + 
+                    data_processed$sd_assuming_ci[data_processed$outcome == "anxiety" & data_processed$condition == "distinction"]^2 + 
+                    data_processed$sd_assuming_ci[data_processed$outcome == "stress" & data_processed$condition == "distinction"]^2)/3),
+      sd2 = sqrt((data_processed$sd_assuming_ci[data_processed$outcome == "discomfort" & data_processed$condition == "hierarchy"]^2 + 
+                    data_processed$sd_assuming_ci[data_processed$outcome == "anxiety" & data_processed$condition == "hierarchy"]^2 + 
+                    data_processed$sd_assuming_ci[data_processed$outcome == "stress" & data_processed$condition == "hierarchy"]^2)/3),
+      n1 = sample_size,
+      n2 = sample_size
+      ) |>
+      mutate(outcome_measure = "Distress (pooled)")
+  ) |>
+  mutate(outcome_measure = fct_relevel(outcome_measure, "Distress (pooled)", "Stress", "Anxiety", "Discomfort")) |>
+  select(outcome_measure, 
+         m1,
+         sd1,
+         n1, 
+         m2,
+         sd2,
+         n2,
+         hedges_g, 
+         hedges_g_ci_lower, 
+         hedges_g_ci_upper, 
+         t, 
+         df, 
+         p, 
+         p_adjusted)
+
+```
+
+This method, which represents an inference method that ties the single hypothesis to the result of a single appropriate statistical test, did not find evidence that there are differences between the conditions, contrary to Foody et al.'s (2013) conclusions. 
+
+## Assuming CIs in plot are SEM
+
+### Outcome measures reported in Foody et al. (2013)
+
+Adjusted p values via Holm corrections
+
+```{r fig.height=2, fig.width=5}
+
+es_assuming_sem <- 
+  bind_rows(
+    t_test_from_descriptives(
+      m1 = data_processed$mean[data_processed$outcome == "discomfort" & data_processed$condition == "distinction"],
+      m2 = data_processed$mean[data_processed$outcome == "discomfort" & data_processed$condition == "hierarchy"],
+      sd1 = data_processed$sd_assuming_sem[data_processed$outcome == "discomfort" & data_processed$condition == "distinction"],
+      sd2 = data_processed$sd_assuming_sem[data_processed$outcome == "discomfort" & data_processed$condition == "hierarchy"],
+      n1 = sample_size,
+      n2 = sample_size
+    ) |>
+      mutate(outcome_measure = "Discomfort"),
+    
+    t_test_from_descriptives(
+      m1 = data_processed$mean[data_processed$outcome == "anxiety" & data_processed$condition == "distinction"],
+      m2 = data_processed$mean[data_processed$outcome == "anxiety" & data_processed$condition == "hierarchy"],
+      sd1 = data_processed$sd_assuming_sem[data_processed$outcome == "anxiety" & data_processed$condition == "distinction"],
+      sd2 = data_processed$sd_assuming_sem[data_processed$outcome == "anxiety" & data_processed$condition == "hierarchy"],
+      n1 = sample_size,
+      n2 = sample_size
+      ) |>
+      mutate(outcome_measure = "Anxiety"),
+    
+    t_test_from_descriptives(
+      m1 = data_processed$mean[data_processed$outcome == "stress" & data_processed$condition == "distinction"],
+      m2 = data_processed$mean[data_processed$outcome == "stress" & data_processed$condition == "hierarchy"],
+      sd1 = data_processed$sd_assuming_sem[data_processed$outcome == "stress" & data_processed$condition == "distinction"],
+      sd2 = data_processed$sd_assuming_sem[data_processed$outcome == "stress" & data_processed$condition == "hierarchy"],
+      n1 = sample_size,
+      n2 = sample_size
+    ) |>
+      mutate(outcome_measure = "Stress")
+  ) |>
+  mutate(p_adjusted = p.adjust(p, method = "holm"),
+         hedges_g_se = (hedges_g_ci_upper - hedges_g_ci_lower)/(1.96*2)) |>
+  mutate(outcome_measure = fct_relevel(outcome_measure, "Stress", "Anxiety", "Discomfort")) |>
+  select(outcome_measure, 
+         m1,
+         sd1,
+         n1, 
+         m2,
+         sd2,
+         n2,
+         hedges_g, 
+         hedges_g_ci_lower, 
+         hedges_g_ci_upper, 
+         hedges_g_se,
+         t, 
+         df, 
+         p, 
+         p_adjusted)
+
+es_assuming_sem |>
+  select(outcome_measure,
+         m1,
+         sd1,
+         n1, 
+         m2,
+         sd2,
+         n2,
+         hedges_g, 
+         hedges_g_ci_lower, 
+         hedges_g_ci_upper, 
+         t, 
+         df, 
+         p, 
+         p_adjusted) |>
+  mutate(p = round_p(p),
+         p_adjusted = round_p(p_adjusted)) |>
+  round_all_but_p_values() |>
+  kable() |>
+  kable_classic(full_width = FALSE)
+
+```
+
+#### Pairwise comparisons of effect sizes
+
+Calculate Z scores for the difference between each pair of Hedges' *g* effect sizes
+
+```{r}
+
+z_discomfort_anxiety <- 
+  (es_assuming_sem$hedges_g[es_assuming_sem$outcome_measure == "Discomfort"] - es_assuming_sem$hedges_g[es_assuming_sem$outcome_measure == "Anxiety"]) /
+  sqrt(es_assuming_sem$hedges_g_se[es_assuming_sem$outcome_measure == "Discomfort"]^2 + es_assuming_sem$hedges_g_se[es_assuming_sem$outcome_measure == "Anxiety"]^2)
+
+z_discomfort_stress <- 
+  (es_assuming_sem$hedges_g[es_assuming_sem$outcome_measure == "Discomfort"] - es_assuming_sem$hedges_g[es_assuming_sem$outcome_measure == "Stress"]) /
+  sqrt(es_assuming_sem$hedges_g_se[es_assuming_sem$outcome_measure == "Discomfort"]^2 + es_assuming_sem$hedges_g_se[es_assuming_sem$outcome_measure == "Stress"]^2)
+
+z_anxiety_stress <- 
+  (es_assuming_sem$hedges_g[es_assuming_sem$outcome_measure == "Anxiety"] - es_assuming_sem$hedges_g[es_assuming_sem$outcome_measure == "Stress"]) /
+  sqrt(es_assuming_sem$hedges_g_se[es_assuming_sem$outcome_measure == "Anxiety"]^2 + es_assuming_sem$hedges_g_se[es_assuming_sem$outcome_measure == "Stress"]^2)
+
+p_discomfort_anxiety <- (1-pnorm(abs(z_discomfort_anxiety)))*2
+p_discomfort_stress  <- (1-pnorm(abs(z_discomfort_stress)))*2
+p_anxiety_stress     <- (1-pnorm(abs(z_anxiety_stress)))*2
+
+```
+
+Difference between outcome variables:
+
+- Discomfort vs. Anxiety $p$ = `r round_p(p_discomfort_anxiety)`
+- Discomfort vs. Stress $p$ = `r round_p(p_discomfort_stress)`
+- Anxiety vs. Stress $p$ = `r round_p(p_anxiety_stress)`
+
+### Average scores across the three DVs
+
+```{r fig.height=2, fig.width=5.5}
+
+es_assuming_sem_pooled <- 
+  bind_rows(
+    es_assuming_sem,
+    t_test_from_descriptives(
+      m1 = mean(c(data_processed$mean[data_processed$outcome == "discomfort" & data_processed$condition == "distinction"],
+                data_processed$mean[data_processed$outcome == "anxiety" & data_processed$condition == "distinction"],
+                data_processed$mean[data_processed$outcome == "stress" & data_processed$condition == "distinction"])),
+      m2 = mean(c(data_processed$mean[data_processed$outcome == "discomfort" & data_processed$condition == "hierarchy"],
+                data_processed$mean[data_processed$outcome == "anxiety" & data_processed$condition == "hierarchy"],
+                data_processed$mean[data_processed$outcome == "stress" & data_processed$condition == "hierarchy"])),
+      sd1 = sqrt((data_processed$sd_assuming_sem[data_processed$outcome == "discomfort" & data_processed$condition == "distinction"]^2 + 
+                    data_processed$sd_assuming_sem[data_processed$outcome == "anxiety" & data_processed$condition == "distinction"]^2 + 
+                    data_processed$sd_assuming_sem[data_processed$outcome == "stress" & data_processed$condition == "distinction"]^2)/3),
+      sd2 = sqrt((data_processed$sd_assuming_sem[data_processed$outcome == "discomfort" & data_processed$condition == "hierarchy"]^2 + 
+                    data_processed$sd_assuming_sem[data_processed$outcome == "anxiety" & data_processed$condition == "hierarchy"]^2 + 
+                    data_processed$sd_assuming_sem[data_processed$outcome == "stress" & data_processed$condition == "hierarchy"]^2)/3),
+      n1 = sample_size,
+      n2 = sample_size
+    ) |>
+      mutate(outcome_measure = "Distress (pooled)")
+  ) |>
+  mutate(outcome_measure = fct_relevel(outcome_measure, "Distress (pooled)", "Stress", "Anxiety", "Discomfort")) |>
+  select(outcome_measure,
+         m1,
+         sd1,
+         n1, 
+         m2,
+         sd2,
+         n2,
+         hedges_g, 
+         hedges_g_ci_lower, 
+         hedges_g_ci_upper, 
+         t, 
+         df, 
+         p, 
+         p_adjusted)
+
+```
+
+# Combined results
+
+```{r fig.height=4, fig.width=5.5}
+
+data_combined <- 
+  bind_rows(mutate(es_assuming_ci_pooled, 
+                   interval = "95% CI",
+                   interval_text = "Assuming reported intervals were 95% CIs"),
+            mutate(es_assuming_sem_pooled, 
+                   interval = "SEM",
+                   interval_text = "Assuming reported intervals were SEMs")) |>
+  mutate(color = c("original", "original", "original", "new", 
+                   "original", "original", "original", "new")) |>
+  select(interval, 
+         interval_text,
+         outcome_measure, 
+         m1,
+         sd1,
+         n1, 
+         m2,
+         sd2,
+         n2,
+         hedges_g,
+         lower = hedges_g_ci_lower,
+         upper = hedges_g_ci_upper,
+         t,
+         df,
+         p,
+         p_adj = p_adjusted,
+         color)
+
+table_1 <- data_combined |>
+  filter(outcome_measure != "Distress (pooled)") |>
+  select(-interval_text, -color) |>
+  mutate(p = round_p(p),
+         p_adj = round_p(p_adj)) |>
+  round_all_but_p_values() 
+
+write_csv(table_1, "tables/table_1.csv")
+
+table_1 |>
+  kable() |>
+  kable_classic(full_width = FALSE) |>
+  add_header_above(c("", "", "Hierarchy" = 3, "Distinction" = 3, "", "CI" = 2, "", "", "", ""))
+
+table_2 <- data_combined |>
+  filter(outcome_measure == "Distress (pooled)") |>
+  select(-interval_text, -color, -p_adj) |>
+  mutate(p = round_p(p)) |>
+  round_all_but_p_values() 
+
+write_csv(table_2, "tables/table_2.csv")
+
+table_2 |>
+  kable() |>
+  kable_classic(full_width = FALSE) |>
+  add_header_above(c("", "", "Hierarchy" = 3, "Distinction" = 3, "", "CI" = 2, "", "", ""))
+
+p_combined <- 
+  ggplot(data_combined, aes(outcome_measure, hedges_g, color = color)) +
+  geom_hline(yintercept = 0, linetype = "dotted") +
+  geom_point(shape = "square") +
+  geom_linerange(aes(ymin = lower, ymax = upper)) +
+  scale_y_continuous(breaks = scales::breaks_width(0.25),
+                     limits = c(-0.7, 1.75)) +
+  coord_flip() +
+  scale_color_viridis_d(begin = 0.3, end = 0.7, direction = -1) +
+  theme_classic() +
+  xlab("") +
+  ylab("Hedges' g") +
+  theme(legend.position = "none") +
+  facet_wrap(~ interval_text, ncol = 1)
+
+p_combined
+
+ggplot2::ggsave(filename = "plots/effect size comparisons.pdf", 
+                plot     = p_combined,
+                device   = "pdf",
+                width    = 5, 
+                height   = 4, 
+                units    = "in")
+
+```
+
+# Session info
+
+```{r}
+
+sessionInfo()
+
+```
+
+

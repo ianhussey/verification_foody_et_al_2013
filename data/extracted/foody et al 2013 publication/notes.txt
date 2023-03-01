@@ -1,0 +1,3 @@
+values in "summary statistics extracted from text.csv" extracted manually from the text.
+
+data_extracted_all.csv created by processing.Rmd script in code folder.

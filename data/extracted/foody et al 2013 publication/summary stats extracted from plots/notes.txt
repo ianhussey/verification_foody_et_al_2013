@@ -1,0 +1,5 @@
+where possible, numerical summary stats were extracted from the text (e.g., change scores between conditions, sample size). Where not available, summary stats (e.g., means at baseline, intervals widths) were extracted from screenshots of Figures 1-3 using WebPlotDigitizer version 4.6.0.
+
+.tar files can be opened in that program and contain the images, scale calibration and data point locations and labels. 
+
+.csv files were exported from that program.
