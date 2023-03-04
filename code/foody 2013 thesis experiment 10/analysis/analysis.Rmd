@@ -32,6 +32,7 @@ library(knitr)
 library(kableExtra)
 library(janitor)
 library(forcats)
+library(patchwork)
 
 # create director
 dir.create("plots/")
@@ -452,6 +453,72 @@ es_assuming_sem_pooled <-
          df, 
          p, 
          p_adjusted)
+
+```
+
+# Visualising SDs from 95% CIs vs SEMs
+
+```{r}
+
+plot_data_ci <- es_assuming_ci_pooled |>
+  filter(outcome_measure == "Distress (pooled)") 
+
+p_dist_ci <- 
+  ggplot() +
+  stat_function(fun = dnorm, 
+                args = list(mean = plot_data_ci$m1, 
+                            sd = plot_data_ci$sd1),
+                aes(color = "Distinction")) +
+  stat_function(fun = dnorm, 
+                args = list(mean = plot_data_ci$m2, 
+                            sd = plot_data_ci$sd2),
+                aes(color = "Hierarchy")) +
+  scale_colour_manual(values = c("black", "grey"),
+                      labels = c("Distinction", "Hierarchy")) +
+  theme_classic() +
+  xlim(0,100) +
+  ylab("") +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = c(0.8, 0.7)) +
+  guides(color = guide_legend(title = "Condition", reverse = TRUE)) +
+  ggtitle("Assuming intervals were 95% CIs")
+
+
+plot_data_sem <- es_assuming_sem_pooled |>
+  filter(outcome_measure == "Distress (pooled)") 
+
+p_dist_sem <- 
+  ggplot() +
+  stat_function(fun = dnorm, 
+                args = list(mean = plot_data_sem$m1, 
+                            sd = plot_data_sem$sd1),
+                aes(color = "Distinction")) +
+  stat_function(fun = dnorm, 
+                args = list(mean = plot_data_sem$m2, 
+                            sd = plot_data_sem$sd2),
+                aes(color = "Hierarchy")) +
+  scale_colour_manual(values = c("black", "grey"),
+                      labels = c("Distinction", "Hierarchy")) +
+  theme_classic() +
+  xlim(0,100) +
+  ylab("") +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = c(0.8, 0.7)) +
+  guides(color = guide_legend(title = "Condition", reverse = TRUE)) +
+  ggtitle("Assuming intervals were SEMs")
+
+p_dist <- p_dist_ci + p_dist_sem + plot_layout(ncol = 1)
+
+p_dist
+
+ggplot2::ggsave(filename = "plots/distributions.pdf", 
+                plot     = p_dist,
+                device   = "pdf",
+                width    = 5.5, 
+                height   = 5, 
+                units    = "in")
 
 ```
 
