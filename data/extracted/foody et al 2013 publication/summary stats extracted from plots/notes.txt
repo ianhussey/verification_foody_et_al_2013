@@ -3,3 +3,7 @@ where possible, numerical summary stats were extracted from the text (e.g., chan
 .tar files can be opened in that program and contain the images, scale calibration and data point locations and labels. 
 
 .csv files were exported from that program.
+
+postinduction 1 distinction self lower was missing from the plot, and was estimated via my best estimate of the symmetrical interval.
+As was postinduction 1 distinction self upper.
+

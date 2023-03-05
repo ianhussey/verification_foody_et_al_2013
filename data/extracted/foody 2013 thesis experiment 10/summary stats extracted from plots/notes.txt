@@ -5,3 +5,8 @@ where possible, numerical summary stats were extracted from the text (e.g., chan
 .csv files were exported from that program.
 
 Note that the lower bound interval for the discomfort - postintervention - distinction - self estimate appeared to be missing from Foody's plot. The value used is my best estimate of a symmetrical interval.
+As was postinduction 1 distinction self lower.
+As was postinduction 1 hierarchy self lower.
+As was postinduction 1 distinction self upper.
+
+

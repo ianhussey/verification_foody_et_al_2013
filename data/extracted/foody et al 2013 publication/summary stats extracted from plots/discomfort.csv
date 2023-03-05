@@ -6,3 +6,9 @@ postintervention 1 distinction self upper, 28.746213969923872
 postintervention 1 distinction self lower, 20.654214082897024
 postintervention 1 hierarchy self upper, 20.057263271558977
 postintervention 1 hierarchy self lower, 11.003509299598623
+postinduction 1 hierarchy self estimate, 23.43327330134161
+postinduction 1 distinction self estimate, 23.934816627744
+postinduction 1 distinction self upper, 28.07254907056375
+postinduction 1 hierarchy self lower, 18.518148702598157
+postinduction 1 distinction self lower, 19.891820146578034
+postinduction 1 hierarchy self upper, 28.076728598283744

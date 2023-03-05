@@ -136,7 +136,7 @@ dir.create("../../../data/extracted/foody 2013 thesis experiment 10/")
 write_csv(data_processed, "../../../data/extracted/foody 2013 thesis experiment 10/data_extracted_all.csv")
 
 data_processed |>
-  filter(timepoint == "postintervention") |>
+  filter(timepoint %in% c("postinduction", "postintervention")) |>
   select(outcome, 
          timepoint, 
          condition, 

@@ -1670,7 +1670,7 @@ border-radius: 0px;
 experiment 10</h1>
 <h3 class="subtitle">Data processing</h3>
 <h4 class="author">Ian Hussey</h4>
-<h4 class="date">01 March, 2023</h4>
+<h4 class="date">05 March, 2023</h4>
 
 </div>
 
@@ -1758,7 +1758,7 @@ experiment 10</h1>
 <pre><code>## # A tibble: 1 × 2
 ##   mean_intervals_diff sd_intervals_diff
 ##                 &lt;dbl&gt;             &lt;dbl&gt;
-## 1              -0.221             0.265</code></pre>
+## 1              -0.139             0.214</code></pre>
 <ul>
 <li>both methods of calculating means agree to within .25% on the
 scale.</li>
@@ -1786,7 +1786,7 @@ produce precise and accurate estimates in the below equations.</li>
 <span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv</span>(data_processed, <span class="st">&quot;../../../data/extracted/foody 2013 thesis experiment 10/data_extracted_all.csv&quot;</span>)</span>
 <span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>data_processed <span class="sc">|&gt;</span></span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(timepoint <span class="sc">==</span> <span class="st">&quot;postintervention&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(timepoint <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&quot;postinduction&quot;</span>, <span class="st">&quot;postintervention&quot;</span>)) <span class="sc">|&gt;</span></span>
 <span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(outcome, </span>
 <span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>         timepoint, </span>
 <span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>         condition, </span>
@@ -1814,20 +1814,20 @@ produce precise and accurate estimates in the below equations.</li>
 ## [1] stats     graphics  grDevices utils     datasets  methods   base     
 ## 
 ## other attached packages:
-## [1] janitor_2.1.0 forcats_1.0.0 readr_2.1.3   tidyr_1.3.0   dplyr_1.1.0  
+## [1] janitor_2.1.0 forcats_1.0.0 readr_2.1.4   tidyr_1.3.0   dplyr_1.1.0  
 ## 
 ## loaded via a namespace (and not attached):
 ##  [1] pillar_1.8.1     bslib_0.4.2      compiler_4.2.1   jquerylib_0.1.4 
 ##  [5] tools_4.2.1      bit_4.0.5        digest_0.6.31    jsonlite_1.8.4  
-##  [9] lubridate_1.9.1  evaluate_0.20    lifecycle_1.0.3  tibble_3.1.8    
+##  [9] lubridate_1.9.2  evaluate_0.20    lifecycle_1.0.3  tibble_3.1.8    
 ## [13] timechange_0.2.0 pkgconfig_2.0.3  rlang_1.0.6      cli_3.6.0       
 ## [17] rstudioapi_0.14  parallel_4.2.1   yaml_2.3.7       xfun_0.37       
-## [21] fastmap_1.1.0    withr_2.5.0      stringr_1.5.0    knitr_1.42      
+## [21] fastmap_1.1.1    withr_2.5.0      stringr_1.5.0    knitr_1.42      
 ## [25] generics_0.1.3   vctrs_0.5.2      sass_0.4.5       hms_1.1.2       
 ## [29] bit64_4.0.5      tidyselect_1.2.0 glue_1.6.2       snakecase_0.11.0
 ## [33] R6_2.5.1         fansi_1.0.4      vroom_1.6.1      rmarkdown_2.20  
 ## [37] purrr_1.0.1      tzdb_0.3.0       magrittr_2.0.3   htmltools_0.5.4 
-## [41] ellipsis_0.3.2   utf8_1.2.3       stringi_1.7.12   cachem_1.0.6    
+## [41] ellipsis_0.3.2   utf8_1.2.3       stringi_1.7.12   cachem_1.0.7    
 ## [45] crayon_1.5.2</code></pre>
 </div>
 
