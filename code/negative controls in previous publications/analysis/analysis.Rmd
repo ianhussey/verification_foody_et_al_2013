@@ -1,0 +1,257 @@
+---
+title: "Analysis of negative control conditions in previous publications using the distress induction procedure cited in Foody et al. (2012)"
+author: "Ian Hussey"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    code_folding: hide
+    highlight: haddock
+    theme: flatly
+    toc: yes
+    toc_float: yes
+---
+
+```{r, include=FALSE}
+
+knitr::opts_chunk$set(message = FALSE,
+                      warning = FALSE)
+
+```
+
+# Dependencies and functions
+
+```{r}
+
+# dependencies
+
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+library(janitor)
+library(forcats)
+library(patchwork)
+
+# disable scientific notation
+options(scipen=999)
+
+# create director
+dir.create("plots/")
+dir.create("tables/")
+
+
+#' apa_p_value
+#'
+#' This function uses rounds p values using APA rules: No leading zero, rounded to three decimal places (via ceiling rather than round), below this shows as "< .001".
+#' @param p p value to be formatted
+#' @export
+#' @examples
+#' apa_p_value(0.00000004)
+#' apa_p_value(0.487173)
+apa_p_value <- function(p, digits = 4){
+  p_formatted <- ifelse(p >= 10^-digits, 
+                        as.character(ceiling(as.numeric(p)*10^digits)/10^digits),
+                        paste0("< .", paste0(rep.int(0, times = digits-1), collapse = ""), "1"))
+  p_formatted <- gsub(pattern = "0.", replacement = ".", x = p_formatted, fixed = TRUE)
+  p_formatted
+}
+
+
+#' Calculate an independent t test from summary statistics
+#' @source https://stats.stackexchange.com/q/30450. Improvements made to readability and documentation, added effect sizes.
+#' @param m1: the sample 1 mean
+#' @param m2: the sample 2 mean
+#' @param sd1: the sample 1 SD
+#' @param sd2: the sample 2 SD
+#' @param n1: the sample 2 sample size
+#' @param n2: the sample 2 sample size
+#' @param m0: the null value for the difference in means to be tested for. Default is 0. 
+#' @param equal.variance: whether or not to assume equal variance. Default is FALSE as in the base R t.test function, i.e., a Welch's t-test. Setting to TRUE will produce a Student's t-test.
+t_test_from_descriptives <- function(m1, m2, sd1, sd2, n1, n2, m0 = 0, equal.variance = FALSE) {
+  require(psych)
+  
+  if(equal.variance == FALSE) {
+    se <- sqrt( (sd1^2/n1) + (sd2^2/n2) )
+    # welch-satterthwaite df
+    df <- ( (sd1^2/n1 + sd2^2/n2)^2 )/( (sd1^2/n1)^2/(n1-1) + (sd2^2/n2)^2/(n2-1) )
+  } else {
+    # pooled standard deviation, scaled by the sample sizes
+    se <- sqrt( (1/n1 + 1/n2) * ((n1-1)*sd1^2 + (n2-1)*sd2^2)/(n1+n2-2) ) 
+    df <- n1+n2-2
+  } 
+  
+  t <- (m1 - m2 - m0)/se 
+  d <- (m1 - m2) / sqrt((sd1^2 + sd2^2)/2)
+  d_cis <- psych::cohen.d.ci(d, n2 = n2, n1 = n1, alpha = .05)
+  
+  g <- d * ( 1 - (3 / ((4*(n1 + n2 - 2)) - 1)) ) # https://stats.stackexchange.com/q/434978 by Wolfgang Vichtbauer, creator of metafor package
+  g_cis <- psych::cohen.d.ci(g, n2 = n2, n1 = n1, alpha = .05)
+  
+  dat <- data.frame(m1 = m1, 
+                    sd1 = sd1, 
+                    n1 = n1, 
+                    m2 = m2, 
+                    sd2 = sd2, 
+                    n2 = n2,
+                    mean_difference = m1 - m2,
+                    se = se,
+                    cohens_d = d,
+                    cohens_d_ci_lower = d_cis[1],
+                    cohens_d_ci_upper = d_cis[3],
+                    hedges_g = g,
+                    hedges_g_ci_lower = g_cis[1],
+                    hedges_g_ci_upper = g_cis[3],
+                    t = t, 
+                    df = df,
+                    p = 2 * pt(-abs(t), df))
+  
+  return(dat) 
+}
+
+round_all_but_p_values <- function(output, digits = 2){
+  require(dplyr)
+  
+  output |>
+    mutate(p = as.character(p)) |>
+    mutate_if(is.numeric, janitor::round_half_up, digits = 2)
+}
+
+```
+
+# Data
+
+Anxiety VAS ratings taken from previous publications using the single sentence distress induction task cited in Foody et al. 2012. Anxiety only, as it's the only common outcome that is shared between Foody, Rachman and other papers. No instructions only condition, in order to quantify negative control conditions.
+
+- Rachman et al. (1996): data included below.
+- Van den Hout et al (2002): data included below.
+- Bocci & Gordon (2007): Did not include a no instructions condition. Participants were instructed they could do anything they like, including to the paper (i.e., what Rachman et al. would call neutralisation).
+- Marcks & Woods (2007): included a no instructions "monitor only" condition but report that they dropped it from their analysis, only reporting scores at one timepoint.
+- Zucker et al. (2002): I couldn't get access to the full text article. Have requested from the authors.
+
+```{r}
+
+# Taken from Table 1 for "Condition 2 Delay-neutralization", which received no instructions between postinduction and postdelay. Delay was a 20 minute follow up. Data came from a single item 0-100 VAS scale measuring current anxiety, as in Foody's work.
+dat_rachman <- 
+  tibble(timepoint = c("Baseline", "Postinduction", "Postdelay"),
+         m = c(12.2, 69.7, 15.29),
+         sd = c(9.3, 14.4, 18.5),
+         n = c(34, 34, 34),
+         se = sd / sqrt(n)) |>
+  mutate(timepoint = fct_relevel(timepoint, c("Baseline", "Postinduction", "Postdelay")),
+         study = "Rachman et al. (1996)")
+
+# Taken from Table 2 no instruction groups. 
+# nb postinduction = "post imaging", postdelay = "After 2 mins" in table
+dat_vandenhout <- 
+  tibble(timepoint = c("Baseline", "Postinduction", "Postdelay"), 
+         m = c(6, 35, 10),
+         sd = c(7, 27, 13),
+         n = c(40, 40, 40),
+         se = sd / sqrt(n)) |>
+  mutate(timepoint = fct_relevel(timepoint, c("Baseline", "Postinduction", "Postdelay")),
+         study = "van den Hout et al. (2002)")
+
+dat <- bind_rows(dat_rachman, 
+                 dat_vandenhout)
+
+```
+
+# Plot 
+
+Intervals are 95% CIs calculated from the SEs, which were calculated from the N and SDs.
+
+```{r}
+
+p1 <-
+  ggplot(dat, aes(timepoint, m, color = study, group = study)) +
+  geom_line(alpha = 0.5,
+            position = position_dodge(width = 0.2)) +
+  geom_linerange(aes(ymin = m - se*1.96, ymax = m + se*1.96), position = position_dodge(width = 0.2)) +
+  geom_point(position = position_dodge(width = 0.2)) +
+  scale_color_viridis_d(option = "mako", begin = 0.3, end = 0.7,
+                        name = "Study") +
+  ylim(0,100) +
+  theme_linedraw() +
+  ylab("Anxiety VAS") +
+  xlab("Time point") +
+  theme(legend.position = c(.75, .85),
+        legend.background = element_rect(fill='transparent'),
+        legend.box.background = element_rect(fill='white'))
+
+p1
+
+ggplot2::ggsave(filename = "plots/negative controls.pdf", 
+                plot     = p1,
+                device   = "pdf",
+                width    = 5, 
+                height   = 4, 
+                units    = "in")
+
+```
+
+# Effect sizes
+
+Positive values represent less anxiety.
+
+```{r}
+
+data_es <-
+  bind_rows(
+    dat |>
+      pivot_wider(names_from = timepoint,
+                  values_from = c(m, sd, n, se)) |>
+      group_by(study) |>
+      do(t_test_from_descriptives(m1 = .$m_Baseline, 
+                                  m2 = .$m_Postinduction, 
+                                  sd1 = .$sd_Baseline, 
+                                  sd2 = .$sd_Postinduction, 
+                                  n1 = .$n_Baseline, 
+                                  n2 = .$n_Postinduction)) |>
+      mutate(comparison = "Baseline vs postinduction"),
+    
+    dat |>
+      pivot_wider(names_from = timepoint,
+                  values_from = c(m, sd, n, se)) |>
+      group_by(study) |>
+      do(t_test_from_descriptives(m1 = .$m_Postinduction, 
+                                  m2 = .$m_Postdelay, 
+                                  sd1 = .$sd_Postinduction, 
+                                  sd2 = .$sd_Postdelay, 
+                                  n1 = .$n_Postinduction, 
+                                  n2 = .$n_Postdelay)) |>
+      mutate(comparison = "Postinduction vs postdelay"),
+    
+    dat |>
+      pivot_wider(names_from = timepoint,
+                  values_from = c(m, sd, n, se)) |>
+      group_by(study) |>
+      do(t_test_from_descriptives(m1 = .$m_Baseline, 
+                                  m2 = .$m_Postdelay, 
+                                  sd1 = .$sd_Baseline, 
+                                  sd2 = .$sd_Postdelay, 
+                                  n1 = .$n_Baseline, 
+                                  n2 = .$n_Postdelay)) |>
+      mutate(comparison = "Baseline vs postdelay") 
+  ) |>
+  select(comparison, m1, sd1, n1, m2, sd2, n2, hedges_g, lower = hedges_g_ci_lower, upper = hedges_g_ci_upper, 
+         t, df, p) |>
+  mutate(p = apa_p_value(p, digits = 5)) |>
+  arrange(study) |>
+  round_all_but_p_values()
+
+data_es |>
+  kable() |>
+  kable_classic(full_width = FALSE)
+
+write_csv(data_es, "tables/effect sizes.csv")
+
+```
+
+# Session info
+
+```{r}
+
+sessionInfo()
+
+```
+
+
