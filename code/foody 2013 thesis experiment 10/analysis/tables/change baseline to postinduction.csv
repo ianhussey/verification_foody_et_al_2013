@@ -1,0 +1,7 @@
+study,outcome,interval,hedges_g,lower,upper
+Foody (2013) thesis experiment 10,discomfort,Assuming intervals are 95% CIs,1.13,0.25,1.98
+Foody (2013) thesis experiment 10,anxiety,Assuming intervals are 95% CIs,0.9,0.05,1.73
+Foody (2013) thesis experiment 10,stress,Assuming intervals are 95% CIs,0.84,0,1.67
+Foody (2013) thesis experiment 10,discomfort,Assuming intervals are SEMs,0.57,-0.25,1.39
+Foody (2013) thesis experiment 10,anxiety,Assuming intervals are SEMs,0.46,-0.36,1.26
+Foody (2013) thesis experiment 10,stress,Assuming intervals are SEMs,0.43,-0.39,1.24

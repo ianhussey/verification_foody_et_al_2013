@@ -1,0 +1,7 @@
+study,outcome,interval,hedges_g,lower,upper
+Foody et al. (2013),discomfort,Assuming intervals are 95% CIs,1.8,1.01,2.57
+Foody et al. (2013),anxiety,Assuming intervals are 95% CIs,1.5,0.75,2.24
+Foody et al. (2013),stress,Assuming intervals are 95% CIs,0.99,0.29,1.68
+Foody et al. (2013),discomfort,Assuming intervals are SEMs,0.92,0.22,1.6
+Foody et al. (2013),anxiety,Assuming intervals are SEMs,0.77,0.08,1.44
+Foody et al. (2013),stress,Assuming intervals are SEMs,0.51,-0.16,1.17
