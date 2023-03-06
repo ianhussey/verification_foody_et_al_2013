@@ -1951,7 +1951,7 @@ experiment 10</h1>
 <span id="cb1-49"><a href="#cb1-49" aria-hidden="true" tabindex="-1"></a>  d <span class="ot">&lt;-</span> (m1 <span class="sc">-</span> m2) <span class="sc">/</span> <span class="fu">sqrt</span>((sd1<span class="sc">^</span><span class="dv">2</span> <span class="sc">+</span> sd2<span class="sc">^</span><span class="dv">2</span>)<span class="sc">/</span><span class="dv">2</span>)</span>
 <span id="cb1-50"><a href="#cb1-50" aria-hidden="true" tabindex="-1"></a>  d_cis <span class="ot">&lt;-</span> psych<span class="sc">::</span><span class="fu">cohen.d.ci</span>(d, <span class="at">n2 =</span> n2, <span class="at">n1 =</span> n1, <span class="at">alpha =</span> .<span class="dv">05</span>)</span>
 <span id="cb1-51"><a href="#cb1-51" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb1-52"><a href="#cb1-52" aria-hidden="true" tabindex="-1"></a>  g <span class="ot">&lt;-</span> d <span class="sc">*</span> ( <span class="dv">1</span> <span class="sc">-</span> (<span class="dv">3</span> <span class="sc">/</span> ((<span class="dv">4</span><span class="sc">*</span>(n1 <span class="sc">+</span> n1 <span class="sc">-</span> <span class="dv">2</span>)) <span class="sc">-</span> <span class="dv">1</span>)) ) <span class="co"># https://stats.stackexchange.com/q/434978 by Wolfgang Vichtbauer, creator of metafor package</span></span>
+<span id="cb1-52"><a href="#cb1-52" aria-hidden="true" tabindex="-1"></a>  g <span class="ot">&lt;-</span> d <span class="sc">*</span> ( <span class="dv">1</span> <span class="sc">-</span> (<span class="dv">3</span> <span class="sc">/</span> ((<span class="dv">4</span><span class="sc">*</span>(n1 <span class="sc">+</span> n2 <span class="sc">-</span> <span class="dv">2</span>)) <span class="sc">-</span> <span class="dv">1</span>)) ) <span class="co"># https://stats.stackexchange.com/q/434978 by Wolfgang Vichtbauer, creator of metafor package</span></span>
 <span id="cb1-53"><a href="#cb1-53" aria-hidden="true" tabindex="-1"></a>  g_cis <span class="ot">&lt;-</span> psych<span class="sc">::</span><span class="fu">cohen.d.ci</span>(g, <span class="at">n2 =</span> n2, <span class="at">n1 =</span> n1, <span class="at">alpha =</span> .<span class="dv">05</span>)</span>
 <span id="cb1-54"><a href="#cb1-54" aria-hidden="true" tabindex="-1"></a>  </span>
 <span id="cb1-55"><a href="#cb1-55" aria-hidden="true" tabindex="-1"></a>  dat <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">m1 =</span> m1, </span>
@@ -2012,8 +2012,8 @@ testing these would be:</p>
 <div id="comparing-conditions-at-postintervention" class="section level1">
 <h1>Comparing conditions at postintervention</h1>
 <p>Using independent Welch’s <em>t</em>-tests</p>
-<div id="assuming-cis-in-plot-are-95-cis" class="section level2">
-<h2>Assuming CIs in plot are 95% CIs</h2>
+<div id="assuming-intervals-in-plot-are-95-cis" class="section level2">
+<h2>Assuming intervals in plot are 95% CIs</h2>
 <div id="outcome-measures-reported-in-foody-et-al.-2013" class="section level3">
 <h3>Outcome measures reported in Foody et al. (2013)</h3>
 <p>Adjusted p values via Holm corrections</p>
@@ -2355,8 +2355,8 @@ test, did not find evidence that there are differences between the
 conditions, contrary to Foody et al.’s (2013) conclusions.</p>
 </div>
 </div>
-<div id="assuming-cis-in-plot-are-sem" class="section level2">
-<h2>Assuming CIs in plot are SEM</h2>
+<div id="assuming-intervals-in-plot-are-sems" class="section level2">
+<h2>Assuming intervals in plot are SEMs</h2>
 <div id="outcome-measures-reported-in-foody-et-al.-2013-1" class="section level3">
 <h3>Outcome measures reported in Foody et al. (2013)</h3>
 <p>Adjusted p values via Holm corrections</p>
@@ -2727,9 +2727,8 @@ Stress
 <span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>                <span class="at">height   =</span> <span class="dv">5</span>, </span>
 <span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>                <span class="at">units    =</span> <span class="st">&quot;in&quot;</span>)</span></code></pre></div>
 </div>
-</div>
-<div id="combined-results" class="section level1">
-<h1>Combined results</h1>
+<div id="combined-results" class="section level2">
+<h2>Combined results</h2>
 <div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>data_combined <span class="ot">&lt;-</span> </span>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">bind_rows</span>(<span class="fu">mutate</span>(es_assuming_ci_pooled, </span>
 <span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>                   <span class="at">interval =</span> <span class="st">&quot;95% CI&quot;</span>,</span>
@@ -3338,6 +3337,7 @@ Distress (pooled)
 <span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>                <span class="at">width    =</span> <span class="dv">5</span>, </span>
 <span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>                <span class="at">height   =</span> <span class="dv">4</span>, </span>
 <span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>                <span class="at">units    =</span> <span class="st">&quot;in&quot;</span>)</span></code></pre></div>
+</div>
 </div>
 <div id="session-info" class="section level1">
 <h1>Session info</h1>

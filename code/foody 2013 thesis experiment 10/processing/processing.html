@@ -1758,7 +1758,7 @@ experiment 10</h1>
 <pre><code>## # A tibble: 1 × 2
 ##   mean_intervals_diff sd_intervals_diff
 ##                 &lt;dbl&gt;             &lt;dbl&gt;
-## 1              -0.139             0.214</code></pre>
+## 1              -0.129             0.211</code></pre>
 <ul>
 <li>both methods of calculating means agree to within .25% on the
 scale.</li>
@@ -1786,7 +1786,7 @@ produce precise and accurate estimates in the below equations.</li>
 <span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv</span>(data_processed, <span class="st">&quot;../../../data/extracted/foody 2013 thesis experiment 10/data_extracted_all.csv&quot;</span>)</span>
 <span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>data_processed <span class="sc">|&gt;</span></span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(timepoint <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&quot;postinduction&quot;</span>, <span class="st">&quot;postintervention&quot;</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  <span class="co">#filter(timepoint %in% c(&quot;postinduction&quot;, &quot;postintervention&quot;)) |&gt;</span></span>
 <span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(outcome, </span>
 <span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>         timepoint, </span>
 <span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>         condition, </span>

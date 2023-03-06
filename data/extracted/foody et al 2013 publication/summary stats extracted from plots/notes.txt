@@ -6,4 +6,10 @@ where possible, numerical summary stats were extracted from the text (e.g., chan
 
 postinduction 1 distinction self lower was missing from the plot, and was estimated via my best estimate of the symmetrical interval.
 As was postinduction 1 distinction self upper.
+as was baseline 1 distinction self upper.
+
+
+baseline 1 distinction self lower was obscured, and estimated by the same method.
+As were both inner CIs for baseline 1 self discomfort.
+
 

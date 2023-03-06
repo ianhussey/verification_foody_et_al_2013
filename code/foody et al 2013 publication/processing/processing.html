@@ -1749,7 +1749,7 @@ border-radius: 0px;
 <pre><code>## # A tibble: 1 × 2
 ##   mean_means_diff sd_means_diff
 ##             &lt;dbl&gt;         &lt;dbl&gt;
-## 1          -0.450         0.519</code></pre>
+## 1          -0.451         0.520</code></pre>
 <div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># compare interval width diffs</span></span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>data_combined <span class="sc">|&gt;</span></span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">mean_intervals_diff =</span> <span class="fu">mean</span>(interval_width_diff, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
@@ -1757,7 +1757,7 @@ border-radius: 0px;
 <pre><code>## # A tibble: 1 × 2
 ##   mean_intervals_diff sd_intervals_diff
 ##                 &lt;dbl&gt;             &lt;dbl&gt;
-## 1              -0.132             0.144</code></pre>
+## 1              -0.116             0.133</code></pre>
 <ul>
 <li>both methods of calculating means agree to within 1.2% on the
 scale.</li>
@@ -1785,7 +1785,7 @@ produce precise and accurate estimates in the below equations.</li>
 <span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv</span>(data_processed, <span class="st">&quot;../../../data/extracted/foody et al 2013 publication/data_extracted_all.csv&quot;</span>)</span>
 <span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>data_processed <span class="sc">|&gt;</span></span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(timepoint <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&quot;postinduction&quot;</span>, <span class="st">&quot;postintervention&quot;</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  <span class="co">#filter(timepoint %in% c(&quot;postinduction&quot;, &quot;postintervention&quot;)) |&gt;</span></span>
 <span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(outcome, </span>
 <span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>         timepoint, </span>
 <span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>         condition, </span>

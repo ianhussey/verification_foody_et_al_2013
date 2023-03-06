@@ -73,7 +73,7 @@ t_test_from_descriptives <- function(m1, m2, sd1, sd2, n1, n2, m0 = 0, equal.var
   d <- (m1 - m2) / sqrt((sd1^2 + sd2^2)/2)
   d_cis <- psych::cohen.d.ci(d, n2 = n2, n1 = n1, alpha = .05)
   
-  g <- d * ( 1 - (3 / ((4*(n1 + n1 - 2)) - 1)) ) # https://stats.stackexchange.com/q/434978 by Wolfgang Vichtbauer, creator of metafor package
+  g <- d * ( 1 - (3 / ((4*(n1 + n2 - 2)) - 1)) ) # https://stats.stackexchange.com/q/434978 by Wolfgang Vichtbauer, creator of metafor package
   g_cis <- psych::cohen.d.ci(g, n2 = n2, n1 = n1, alpha = .05)
   
   dat <- data.frame(m1 = m1, 
@@ -142,7 +142,7 @@ p.adjust(c(.45, .33, .04), method = "holm") |>
 
 Using independent Welch's *t*-tests
 
-## Assuming CIs in plot are 95% CIs
+## Assuming intervals in plot are 95% CIs
 
 ### Outcome measures reported in Foody et al. (2013)
 
@@ -249,11 +249,11 @@ es_assuming_ci_pooled <-
     es_assuming_ci,
     t_test_from_descriptives(
       m1 = mean(c(data_postintervention$mean[data_postintervention$outcome == "discomfort" & data_postintervention$condition == "distinction"],
-                data_postintervention$mean[data_postintervention$outcome == "anxiety" & data_postintervention$condition == "distinction"],
-                data_postintervention$mean[data_postintervention$outcome == "stress" & data_postintervention$condition == "distinction"])),
+                  data_postintervention$mean[data_postintervention$outcome == "anxiety" & data_postintervention$condition == "distinction"],
+                  data_postintervention$mean[data_postintervention$outcome == "stress" & data_postintervention$condition == "distinction"])),
       m2 = mean(c(data_postintervention$mean[data_postintervention$outcome == "discomfort" & data_postintervention$condition == "hierarchy"],
-                data_postintervention$mean[data_postintervention$outcome == "anxiety" & data_postintervention$condition == "hierarchy"],
-                data_postintervention$mean[data_postintervention$outcome == "stress" & data_postintervention$condition == "hierarchy"])),
+                  data_postintervention$mean[data_postintervention$outcome == "anxiety" & data_postintervention$condition == "hierarchy"],
+                  data_postintervention$mean[data_postintervention$outcome == "stress" & data_postintervention$condition == "hierarchy"])),
       sd1 = sqrt((data_postintervention$sd_assuming_ci[data_postintervention$outcome == "discomfort" & data_postintervention$condition == "distinction"]^2 + 
                     data_postintervention$sd_assuming_ci[data_postintervention$outcome == "anxiety" & data_postintervention$condition == "distinction"]^2 + 
                     data_postintervention$sd_assuming_ci[data_postintervention$outcome == "stress" & data_postintervention$condition == "distinction"]^2)/3),
@@ -262,7 +262,7 @@ es_assuming_ci_pooled <-
                     data_postintervention$sd_assuming_ci[data_postintervention$outcome == "stress" & data_postintervention$condition == "hierarchy"]^2)/3),
       n1 = sample_size,
       n2 = sample_size
-      ) |>
+    ) |>
       mutate(outcome_measure = "Distress (pooled)")
   ) |>
   mutate(outcome_measure = fct_relevel(outcome_measure, "Distress (pooled)", "Stress", "Anxiety", "Discomfort")) |>
@@ -285,7 +285,7 @@ es_assuming_ci_pooled <-
 
 This method, which represents an inference method that ties the single hypothesis to the result of a single appropriate statistical test, did not find evidence that there are differences between the conditions, contrary to Foody et al.'s (2013) conclusions. 
 
-## Assuming CIs in plot are SEM
+## Assuming intervals in plot are SEMs
 
 ### Outcome measures reported in Foody et al. (2013)
 
@@ -388,11 +388,11 @@ es_assuming_sem_pooled <-
     es_assuming_sem,
     t_test_from_descriptives(
       m1 = mean(c(data_postintervention$mean[data_postintervention$outcome == "discomfort" & data_postintervention$condition == "distinction"],
-                data_postintervention$mean[data_postintervention$outcome == "anxiety" & data_postintervention$condition == "distinction"],
-                data_postintervention$mean[data_postintervention$outcome == "stress" & data_postintervention$condition == "distinction"])),
+                  data_postintervention$mean[data_postintervention$outcome == "anxiety" & data_postintervention$condition == "distinction"],
+                  data_postintervention$mean[data_postintervention$outcome == "stress" & data_postintervention$condition == "distinction"])),
       m2 = mean(c(data_postintervention$mean[data_postintervention$outcome == "discomfort" & data_postintervention$condition == "hierarchy"],
-                data_postintervention$mean[data_postintervention$outcome == "anxiety" & data_postintervention$condition == "hierarchy"],
-                data_postintervention$mean[data_postintervention$outcome == "stress" & data_postintervention$condition == "hierarchy"])),
+                  data_postintervention$mean[data_postintervention$outcome == "anxiety" & data_postintervention$condition == "hierarchy"],
+                  data_postintervention$mean[data_postintervention$outcome == "stress" & data_postintervention$condition == "hierarchy"])),
       sd1 = sqrt((data_postintervention$sd_assuming_sem[data_postintervention$outcome == "discomfort" & data_postintervention$condition == "distinction"]^2 + 
                     data_postintervention$sd_assuming_sem[data_postintervention$outcome == "anxiety" & data_postintervention$condition == "distinction"]^2 + 
                     data_postintervention$sd_assuming_sem[data_postintervention$outcome == "stress" & data_postintervention$condition == "distinction"]^2)/3),
@@ -488,7 +488,7 @@ ggplot2::ggsave(filename = "plots/distributions.pdf",
 
 ```
 
-# Combined results
+## Combined results
 
 ```{r fig.height=4, fig.width=5.5}
 

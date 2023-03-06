@@ -26,3 +26,7 @@ postinduction 1 hierarchy object lower, 20.73945025164537
 postinduction 1 hierarchy object upper, 38.22154471544716
 postinduction 1 distinction object upper, 36.32210607820363
 postinduction 1 distinction object lower, 23.280100658149433
+baseline 1 distinction self upper, 29.63283416975868
+baseline 1 distinction self lower, 16.851272402808448
+baseline 1 hierarchy self upper, 26.114195275374374
+baseline 1 hierarchy self lower, 13.396223367961202

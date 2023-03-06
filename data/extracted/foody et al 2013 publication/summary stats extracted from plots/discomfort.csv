@@ -12,3 +12,7 @@ postinduction 1 distinction self upper, 28.07254907056375
 postinduction 1 hierarchy self lower, 18.518148702598157
 postinduction 1 distinction self lower, 19.891820146578034
 postinduction 1 hierarchy self upper, 28.076728598283744
+baseline 1 distinction self upper, 13.83871926115816
+baseline 1 hierarchy self lower, 4.525767919008254
+baseline 1 hierarchy self upper, 9.468606081583882
+baseline 1 distinction self lower, 7.344851384144455
