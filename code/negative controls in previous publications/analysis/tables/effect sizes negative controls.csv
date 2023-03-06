@@ -1,0 +1,7 @@
+study,comparison,hedges_g,lower,upper,t,df,p
+Rachman et al. (1996),Baseline vs postinduction,-4.69,-5.61,-3.76,-19.56,56.45,< .00001
+Rachman et al. (1996),Postinduction vs postdelay,3.24,2.51,3.97,13.53,62.25,< .00001
+Rachman et al. (1996),Baseline vs postdelay,-0.21,-0.68,0.27,-0.87,48.68,.38849
+van den Hout et al. (2002),Baseline vs postinduction,-1.46,-1.95,-0.96,-6.58,44.22,< .00001
+van den Hout et al. (2002),Postinduction vs postdelay,1.17,0.69,1.64,5.28,56.16,< .00001
+van den Hout et al. (2002),Baseline vs postdelay,-0.38,-0.82,0.06,-1.71,59.86,.09182
