@@ -589,6 +589,10 @@ data_change_cis <- data_baseline_postinduction |>
                                    mean_hierarchy_baseline) / 2,
          mean_pooled_postinduction = (mean_distinction_postinduction + 
                                         mean_hierarchy_postinduction) / 2,
+         sd_pooled_baseline = sqrt((sd_assuming_ci_distinction_baseline^2 + 
+                                      sd_assuming_ci_hierarchy_baseline^2)/2),
+         sd_pooled_postinduction = sqrt((sd_assuming_ci_distinction_postinduction^2 + 
+                                           sd_assuming_ci_hierarchy_postinduction^2)/2),
          sd_pooled = sqrt((sd_assuming_ci_distinction_baseline^2 + 
                              sd_assuming_ci_hierarchy_baseline^2 +
                              sd_assuming_ci_distinction_postinduction^2 + 
@@ -602,13 +606,9 @@ data_change_cis <- data_baseline_postinduction |>
          upper = psych::cohen.d.ci(hedges_g, n2 = n, n1 = n, alpha = .05)[3]) |>
   ungroup() |>
   select(outcome, 
-         mean_pooled_baseline, mean_pooled_postinduction, sd_pooled, n,
-         mean_change, hedges_g, lower, upper) |>
-  mutate_if(is.numeric, janitor::round_half_up, digits = 2) 
-
-data_change_cis |>
-  kable() |>
-  kable_classic(full_width = FALSE)
+         mean_pooled_baseline, mean_pooled_postinduction, mean_change, 
+         sd_pooled_baseline, sd_pooled_postinduction, sd_pooled, n,
+         hedges_g, lower, upper)
 
 ```
 
@@ -624,6 +624,10 @@ data_change_sem <- data_baseline_postinduction |>
                                    mean_hierarchy_baseline) / 2,
          mean_pooled_postinduction = (mean_distinction_postinduction + 
                                         mean_hierarchy_postinduction) / 2,
+         sd_pooled_baseline = sqrt((sd_assuming_sem_distinction_baseline^2 + 
+                                      sd_assuming_sem_hierarchy_baseline^2)/2),
+         sd_pooled_postinduction = sqrt((sd_assuming_sem_distinction_postinduction^2 + 
+                                           sd_assuming_sem_hierarchy_postinduction^2)/2),
          sd_pooled = sqrt((sd_assuming_sem_distinction_baseline^2 + 
                              sd_assuming_sem_hierarchy_baseline^2 +
                              sd_assuming_sem_distinction_postinduction^2 + 
@@ -637,13 +641,9 @@ data_change_sem <- data_baseline_postinduction |>
          upper = psych::cohen.d.ci(hedges_g, n2 = n, n1 = n, alpha = .05)[3]) |>
   ungroup() |>
   select(outcome, 
-         mean_pooled_baseline, mean_pooled_postinduction, sd_pooled, n,
-         mean_change, hedges_g, lower, upper) 
-
-data_change_sem |>
-  mutate_if(is.numeric, janitor::round_half_up, digits = 2) |>
-  kable() |>
-  kable_classic(full_width = FALSE)
+         mean_pooled_baseline, mean_pooled_postinduction, mean_change, 
+         sd_pooled_baseline, sd_pooled_postinduction, sd_pooled, n,
+         hedges_g, lower, upper)
 
 ```
 
@@ -661,7 +661,17 @@ data_change <-
            interval = "Assuming intervals are SEMs")
 ) |>
   mutate_if(is.numeric, janitor::round_half_up, digits = 2) |>
-  select(study, outcome, interval, hedges_g, lower, upper)
+  select(study, outcome, interval, 
+         mean_baseline = mean_pooled_baseline, mean_postinduction = mean_pooled_postinduction,
+         mean_change, 
+         sd_baseline = sd_pooled_baseline, 
+         sd_postinduction = sd_pooled_postinduction, sd_pooled, n,
+         hedges_g, lower, upper)
+
+data_change |>
+  mutate_if(is.numeric, janitor::round_half_up, digits = 2) |>
+  kable() |>
+  kable_classic(full_width = FALSE)
 
 write_csv(data_change, "tables/change baseline to postinduction.csv")
 

@@ -1,7 +1,7 @@
-study,outcome,interval,hedges_g,lower,upper
-Foody et al. (2013),discomfort,Assuming intervals are 95% CIs,1.8,1.01,2.57
-Foody et al. (2013),anxiety,Assuming intervals are 95% CIs,1.5,0.75,2.24
-Foody et al. (2013),stress,Assuming intervals are 95% CIs,0.99,0.29,1.68
-Foody et al. (2013),discomfort,Assuming intervals are SEMs,0.92,0.22,1.6
-Foody et al. (2013),anxiety,Assuming intervals are SEMs,0.77,0.08,1.44
-Foody et al. (2013),stress,Assuming intervals are SEMs,0.51,-0.16,1.17
+study,outcome,interval,mean_baseline,mean_postinduction,mean_change,sd_baseline,sd_postinduction,sd_pooled,n,hedges_g,lower,upper
+Foody et al. (2013),discomfort,Assuming intervals are 95% CIs,8.78,23.68,14.9,6.25,9.63,8.12,18,1.8,1.01,2.57
+Foody et al. (2013),anxiety,Assuming intervals are 95% CIs,9.24,21.76,12.52,6.75,9.36,8.16,18,1.5,0.75,2.24
+Foody et al. (2013),stress,Assuming intervals are 95% CIs,10.35,18.94,8.59,7.83,9.07,8.47,18,0.99,0.29,1.68
+Foody et al. (2013),discomfort,Assuming intervals are SEMs,8.78,23.68,14.9,12.24,18.87,15.91,18,0.92,0.22,1.6
+Foody et al. (2013),anxiety,Assuming intervals are SEMs,9.24,21.76,12.52,13.22,18.34,15.99,18,0.77,0.08,1.44
+Foody et al. (2013),stress,Assuming intervals are SEMs,10.35,18.94,8.59,15.34,17.77,16.6,18,0.51,-0.16,1.17
