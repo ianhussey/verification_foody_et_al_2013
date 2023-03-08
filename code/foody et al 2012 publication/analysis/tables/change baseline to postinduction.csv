@@ -1,0 +1,7 @@
+study,outcome,interval,mean_baseline,mean_postinduction,mean_change,sd_baseline,sd_postinduction,sd_pooled,n,hedges_g,lower,upper
+Foody et al. (2012),discomfort,Assuming intervals are 95% CIs,8.51,34.24,25.73,28.9,29.18,29.04,32,0.88,0.36,1.39
+Foody et al. (2012),anxiety,Assuming intervals are 95% CIs,7.87,29.11,21.25,29.19,28.56,28.88,32,0.73,0.22,1.23
+Foody et al. (2012),distress,Assuming intervals are 95% CIs,7.54,24.14,16.6,29.16,28.23,28.7,32,0.57,0.07,1.07
+Foody et al. (2012),discomfort,Assuming intervals are SEMs,8.51,34.24,25.73,56.64,57.19,56.92,32,0.45,-0.05,0.94
+Foody et al. (2012),anxiety,Assuming intervals are SEMs,7.87,29.11,21.25,57.22,55.98,56.6,32,0.37,-0.13,0.86
+Foody et al. (2012),distress,Assuming intervals are SEMs,7.54,24.14,16.6,57.16,55.33,56.25,32,0.29,-0.2,0.78
