@@ -1,5 +1,5 @@
 ---
-title: "Analysis of negative control conditions in previous publications using the distress induction procedure cited in Foody et al. (2012)"
+title: "Comparisons with previous publications"
 author: "Ian Hussey"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
@@ -191,123 +191,9 @@ data_foodythesisexp10 <- read_csv("../../foody 2013 thesis experiment 10/analysi
 
 ```
 
-# Comparing baseline to post intervention
+# Negative controls
 
-## Table descriptive statistics
-
-Extracted from original articles
-
-```{r}
-
-dat_descriptives_all <- dat |>
-  select(study, timepoint, m, sd, n, included_no_instructions_condition) 
-
-dat_descriptives_all |>
-  kable() |>
-  kable_classic(full_width = FALSE)
-
-write_csv(dat_descriptives_all, "tables/descriptive statistics.csv")
-
-```
-
-## Plot means
-
-Intervals are 95% CIs calculated from the SEs, which were calculated from the N and SDs.
-
-```{r fig.height=4, fig.width=5}
-
-p1 <-
-  ggplot(dat, aes(timepoint, m, color = study, group = study)) +
-  geom_line(alpha = 0.5,
-            position = position_dodge(width = 0.2)) +
-  geom_linerange(aes(ymin = m - se*1.96, ymax = m + se*1.96), position = position_dodge(width = 0.2)) +
-  geom_point(position = position_dodge(width = 0.2)) +
-  scale_color_viridis_d(option = "mako", begin = 0.3, end = 0.7,
-                        name = "Study") +
-  ylim(0,100) +
-  theme_linedraw() +
-  ylab("Anxiety VAS") +
-  xlab("Time point") +
-  theme(legend.position = c(.75, .75),
-        legend.background = element_rect(fill='transparent'),
-        legend.box.background = element_rect(fill='white'))
-
-p1
-
-# ggplot2::ggsave(filename = "plots/baseline to postinduction means.pdf",
-#                 plot     = p1,
-#                 device   = "pdf",
-#                 width    = 5,
-#                 height   = 4,
-#                 units    = "in")
-
-```
-
-## Table effect sizes
-
-Positive values represent less anxiety.
-
-```{r fig.height=2, fig.width=5}
-
-data_es_induction <-
-  dat |>
-  pivot_wider(names_from = timepoint,
-              values_from = c(m, sd, n, se)) |>
-  group_by(study) |>
-  do(t_test_from_descriptives(m1 = .$m_Baseline, 
-                              m2 = .$m_Postinduction, 
-                              sd1 = .$sd_Baseline, 
-                              sd2 = .$sd_Postinduction, 
-                              n1 = .$n_Baseline, 
-                              n2 = .$n_Postinduction)) |>
-  ungroup() |>
-  mutate(comparison = "Baseline vs postinduction") |>
-  select(study, comparison, hedges_g, lower = hedges_g_ci_lower, upper = hedges_g_ci_upper, 
-         t, df, p) |>
-  mutate(p = apa_p_value(p, digits = 5)) |>
-  arrange(study) |>
-  round_all_but_p_values()
-
-data_es_induction |>
-  kable() |>
-  kable_classic(full_width = FALSE)
-
-write_csv(data_es_induction, "tables/effect sizes baseline vs postinduction.csv")
-
-```
-
-## Plot effect sizes
-
-```{r fig.height=2, fig.width=5}
-
-p2 <- 
-  ggplot(data_es_induction, aes(fct_rev(study), hedges_g)) +
-  geom_hline(yintercept = 0, linetype = "dotted") +
-  geom_point(shape = "square") +
-  geom_linerange(aes(ymin = lower, ymax = upper)) +
-  scale_y_continuous(
-    breaks = scales::breaks_width(0.5),
-    #limits = c(-0.7, 1.75)\
-  ) +
-  coord_flip() +
-  scale_color_viridis_d(begin = 0.3, end = 0.7, direction = -1) +
-  theme_classic() +
-  xlab("") +
-  ylab("Hedges' g") +
-  theme(legend.position = "none") 
-
-p2
-
-ggplot2::ggsave(filename = "plots/baseline to postinduction effect sizes.pdf", 
-                plot     = p2,
-                device   = "pdf",
-                width    = 6, 
-                height   = 2, 
-                units    = "in")
-
-```
-
-# Compare studies with pure negative controls and all three timepoints (baseline, postinduction, postintervention)
+Compare studies with pure negative controls, all three timepoints (baseline, postinduction, postintervention), and a common outcome measure (anxiety VAS)
 
 ## Plot means
 
@@ -316,7 +202,8 @@ Intervals are 95% CIs calculated from the SEs, which were calculated from the N 
 ```{r fig.height=4, fig.width=5}
 
 dat_negative_controls <- dat |>
-  filter(included_no_instructions_condition == TRUE) 
+  filter(included_no_instructions_condition == TRUE) |>
+  select(study, timepoint, m, sd, n, se)
 
 p3 <-
   ggplot(dat_negative_controls, aes(timepoint, m, color = study, group = study)) +
@@ -342,6 +229,16 @@ ggplot2::ggsave(filename = "plots/negative controls.pdf",
                 width    = 5, 
                 height   = 4, 
                 units    = "in")
+
+```
+
+## Table means
+
+```{r}
+
+dat_negative_controls |>
+  kable() |>
+  kable_classic(full_width = FALSE)
 
 ```
 
@@ -403,67 +300,85 @@ write_csv(data_es_negative_controls, "tables/effect sizes negative controls.csv"
 
 ```
 
-## Compare previous studies and Foody studies
+# Compare SDs 
 
-```{r fig.height=3, fig.width=6}
+between Foody's work and previously published studies
 
-dat_es_combined <- 
+```{r fig.height=5, fig.width=5}
+
+data_sd <- 
   bind_rows(
-    data_es_induction |>
-      mutate(outcome = "anxiety",
-             hedges_g = hedges_g*-1, 
-             lower = lower*-1, 
-             upper = upper*-1),
+    dat |>
+      select(study, timepoint, sd) |>
+      pivot_wider(names_from = timepoint, 
+                  values_from = sd) |>
+      select(study, 
+             sd_baseline = Baseline,
+             sd_postinduction = Postinduction) |>
+      mutate(outcome = "anxiety"),
     data_foodyetal2013,
-    data_foodythesisexp10
+    data_foodythesisexp10 |>
+      mutate(study = "Foody (2013) unpublished replication")
   ) |>
-  select(study, outcome, interval, hedges_g, lower, upper) |>
-  mutate(study = fct_relevel(study, 
+  select(study, 
+         outcome, 
+         interval,
+         sd_baseline,
+         sd_postinduction) |>
+  mutate(interval = ifelse(is.na(interval), "Known SD", interval),
+         study = fct_relevel(study, 
                              "Rachman et al. (1996)", 
                              "van den Hout et al. (2002)", 
                              "Zucker et al. (2002)", 
                              "Bocci & Gordon (2007)",
                              "Foody et al. (2013)",
-                             "Foody (2013) thesis experiment 10"),
-         interval = ifelse(is.na(interval), "Not applicable (SD reported)", interval))
-
-# viridisLite::mako(n = 2, begin = 0.4, end = 0.6)
-# viridisLite::viridis(n = 2, begin = 0.3, end = 0.7)
-
-p_comparison <- 
-  dat_es_combined |>
+                             "Foody (2013) unpublished replication")) |>
   filter(outcome == "anxiety") |>
-  ggplot(aes(hedges_g, study, color = interval)) +
-  geom_vline(xintercept = 0, linetype = "dotted") +
-  geom_point(shape = "square", position = position_dodge2(width = 0.5)) +
-  geom_linerangeh(aes(xmin = lower, xmax = upper), position = position_dodge2(width = 0.5)) +
-  scale_x_continuous(
-    breaks = scales::breaks_width(0.5),
-    #limits = c(-0.7, 1.75)\
-  ) +
-  #coord_flip() +
-  scale_color_manual(breaks = c("Assuming intervals are 95% CIs", "Assuming intervals are SEMs"),
+  rename(Baseline = sd_baseline, 
+         Postinduction = sd_postinduction) |>
+  pivot_longer(cols = c(Baseline, Postinduction),
+               names_to = "timepoint", 
+               values_to = "sd") |>
+  mutate(interval = fct_relevel(interval, "Assuming intervals are SEMs", "Assuming intervals are 95% CIs", "Known SD")) |>
+  group_by(timepoint) |>
+  mutate(mean_sd = mean(sd[interval == "Known SD"])) |>
+  ungroup()
+
+plot_sd <- 
+  ggplot(data_sd, aes(sd, study, color = interval, shape = interval)) +
+  geom_vline(aes(xintercept = mean_sd), linetype = "dotted") +
+  geom_point(position = position_dodge(width = 0.5)) +
+  #geom_linerange(aes(ymin = m - se*1.96, ymax = m + se*1.96), position = position_dodge(width = 0.2)) +
+  facet_wrap(~ timepoint, ncol = 1) +
+  #xlim(0,100) +
+  scale_color_manual(breaks = c("Assuming intervals are 95% CIs", "Assuming intervals are SEMs", "Known SD"),
                      values = c("#2A788EFF", "#22A884FF", "darkgrey"),
-                     name = NULL, 
-                     guide = guide_legend(reverse = TRUE)) +
+                     name = NULL) +
+  scale_shape_manual(breaks = c("Assuming intervals are 95% CIs", "Assuming intervals are SEMs", "Known SD"),
+                     values = c("circle", "square", "triangle"),
+                     name = NULL) +
+  #guide = guide_legend(reverse = TRUE)) +
   theme_linedraw() +
   ylab("") +
-  xlab("Hedges' g") +
-  theme(legend.position = c(.73, .83),
-        legend.background = element_rect(fill='transparent',
-                                         color = "black",
-                                         size = 0.1),
-        legend.box.background = element_rect(fill='white'),
-        legend.text = element_text(size = 7),
-        panel.grid.minor = element_blank())
+  xlab("Standard deviation") +
+  # theme(legend.position = c(.75, .13),
+  #       legend.background = element_rect(fill='transparent'),
+  #       legend.box.background = element_rect(fill='white'),
+  #       legend.text = element_text(size = 8))
+  theme(legend.position = "bottom",
+        #legend.background = element_rect(fill='transparent'),
+        #legend.box.background = element_rect(fill='white'),
+        legend.text = element_text(size = 8)) +
+  guides(color = guide_legend(ncol = 1),
+         shape = guide_legend(ncol = 1))
 
-p_comparison
+plot_sd
 
-ggplot2::ggsave(filename = "plots/baseline to postinduction effect sizes comparison with foody.pdf", 
-                plot     = p_comparison,
+ggplot2::ggsave(filename = "plots/standard deviations between studies.pdf", 
+                plot     = plot_sd,
                 device   = "pdf",
                 width    = 6, 
-                height   = 3, 
+                height   = 5, 
                 units    = "in")
 
 ```
