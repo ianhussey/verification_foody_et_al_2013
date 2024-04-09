@@ -138,6 +138,74 @@ p.adjust(c(.45, .33, .04), method = "holm") |>
 
 ```
 
+# Reproduce original plot
+
+```{r}
+
+ggplot(data_processed, aes(timepoint, mean, linetype = fct_rev(condition), group = fct_rev(interaction(condition, outcome)), color = outcome)) +
+  geom_line() +
+  geom_point() +
+  #facet_wrap(~ outcome, ncol = 1) +
+  theme_linedraw() +
+  #ylim(0, 30) +
+  ylab("Mean score") +
+  xlab("Time point")
+
+# ggplot(data_processed, aes(timepoint, mean, linetype = fct_rev(condition), group = fct_rev(condition))) +
+#   geom_line() +
+#   geom_point() +
+#   facet_wrap(~ outcome, ncol = 1) +
+#   theme_linedraw() +
+#   #ylim(0, 30) +
+#   ylab("Mean score") +
+#   xlab("Time point")
+
+```
+
+
+```{r}
+
+data_processed |>
+  group_by(timepoint, condition) |>
+  summarize(mean = mean(mean)) |>
+  ggplot(aes(timepoint, mean, linetype = fct_rev(condition), group = fct_rev(interaction(condition)))) +
+  geom_line() +
+  geom_point() +
+  #facet_wrap(~ outcome, ncol = 1) +
+  theme_linedraw() +
+  #ylim(0, 30) +
+  ylab("Mean score") +
+  xlab("Time point")
+
+# data_processed |>
+#   mutate(se_assuming_ci = sd_assuming_ci/sqrt(n),
+#          se_assuming_sem = sd_assuming_sem/sqrt(n)) |>
+#   mutate_if(is.numeric, janitor::round_half_up, digits = 2)
+
+```
+
+
+```{r}
+
+data_processed_replication <- data_processed
+
+bind_rows(data_processed_published,
+          data_processed_replication) |> # loaded from other Rmd file
+  group_by(timepoint, condition) |>
+  summarize(mean = mean(mean)) |>
+  ggplot(aes(timepoint, mean, linetype = fct_rev(condition), group = fct_rev(interaction(condition)))) +
+  geom_line() +
+  geom_point() +
+  #facet_wrap(~ outcome, ncol = 1) +
+  theme_linedraw() +
+  #ylim(0, 30) +
+  ylab("Mean score") +
+  xlab("Time point")
+
+```
+
+NB differences at baseline are between d = .26 (if intervals are SEMs) to d = 0.52 (if intervals are CIs). These seem large?
+
 # Comparing conditions at postintervention
 
 Using independent Welch's *t*-tests
