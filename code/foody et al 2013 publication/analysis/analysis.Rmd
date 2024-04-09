@@ -30,6 +30,9 @@ library(kableExtra)
 library(janitor)
 library(forcats)
 library(patchwork)
+library(statcheck)
+library(readxl)
+library(scrutiny)
 
 # create director
 dir.create("plots/")
@@ -105,6 +108,10 @@ round_all_but_p_values <- function(output, digits = 2){
     mutate_if(is.numeric, janitor::round_half_up, digits = 2)
 }
 
+round_half_up_min_decimals <- function(x, digits = 2) {
+  sprintf(paste0("%.", digits, "f"), janitor::round_half_up(x, digits = digits))
+}
+
 ```
 
 # Get data
@@ -124,6 +131,85 @@ sample_size <- data_processed |>
 length(sample_size) == 1
 
 ```
+
+# GRIM / GRIMMER tests
+
+## Demographics
+
+"This yielded a final sample of 36 participants (14 males and 22 females), aged between 18 and 21 (M= 19.78 years). Participants were allocated randomly across two conditions denoted as distinction self as context (N= 18) and hierarchical self as context (N= 18)."
+
+"M (SD)= 16.2 (6.3); hierarchical self as context: M (SD)= 18.2 (6.4)]"
+
+No SD reported so GRIMMER can't be fit.
+
+```{r}
+
+grim_age <- 
+  tibble(x = "19.78",
+         n = 36) |>
+  grim_map() 
+
+grim_age |>
+  select(n,
+         mean = x,
+         GRIM_consistent = consistency) |>
+  mutate_if(is.numeric, round_half_up, digits = 2) |>
+  knitr::kable() |>
+  kableExtra::kable_classic(full_width = FALSE)
+
+grim_age |>
+  grim_plot()
+
+```
+
+```{r}
+
+data_aaq <- 
+  tibble(x = c("16.2", "18.2"),
+         sd = c("6.3", "6.4"),
+         n = c(18, 18)) 
+
+data_aaq |>
+  grim_map(items = 7) |>
+  select(n,
+         mean = x,
+         GRIM_consistent = consistency) |>
+  mutate_if(is.numeric, round_half_up, digits = 2) |>
+  knitr::kable() |>
+  kableExtra::kable_classic(full_width = FALSE)
+
+data_aaq |>
+  grim_map(items = 7) |>
+  grim_plot()
+
+data_aaq |>
+  grimmer_map(items = 7) |>
+  select(n,
+         mean = x,
+         sd,
+         GRIMMER_consistent = consistency) |>
+  mutate_if(is.numeric, round_half_up, digits = 2) |>
+  knitr::kable() |>
+  kableExtra::kable_classic(full_width = FALSE)
+
+```
+
+# Statcheck
+
+```{r}
+
+statistical_results <- read_xlsx("../../../data/extracted/foody et al 2013 publication/statistical_results.xlsx")
+
+bind_cols(statistical_results |>
+            select(test = result),
+          statcheck(statistical_results, messages = FALSE)) |>
+  select(test, raw, computed_p, error, decision_error) |>
+  mutate_if(is.numeric, round_half_up_min_decimals, digits = 2) |>
+  kable() |>
+  kableExtra::kable_classic(full_width = FALSE)
+
+```
+
 
 # Corrected *p* values for RM-ANOVAs
 
