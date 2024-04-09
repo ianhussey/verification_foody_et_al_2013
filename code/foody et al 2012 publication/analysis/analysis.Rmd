@@ -122,6 +122,21 @@ length(sample_size) == 1
 
 ```
 
+# Reproduce original plot
+
+```{r}
+
+ggplot(data_processed, aes(timepoint, mean, group = fct_rev(outcome), color = outcome)) +
+  geom_line() +
+  geom_point() +
+  #facet_wrap(~ outcome, ncol = 1) +
+  theme_linedraw() +
+  #ylim(0, 30) +
+  ylab("Mean score") +
+  xlab("Time point")
+
+```
+
 # Change from baseline to postinduction
 
 ## Assuming intervals in plot are 95% CIs
