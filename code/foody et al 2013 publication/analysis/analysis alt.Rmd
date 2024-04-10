@@ -140,12 +140,22 @@ p.adjust(c(.45, .33, .04), method = "holm") |>
 
 # Reproduce original plot
 
-```{r fig.height=6, fig.width=6}
+```{r fig.height=8, fig.width=6}
 
 ggplot(data_processed, aes(timepoint, mean, linetype = fct_rev(condition), group = fct_rev(interaction(condition, outcome)), color = outcome)) +
   geom_line() +
   geom_point() +
-  #facet_wrap(~ outcome, ncol = 1) +
+  facet_wrap(~ outcome, ncol = 1) +
+  theme_linedraw() +
+  ylim(0, 30) +
+  ylab("Mean score") +
+  xlab("Time point")
+
+ggplot(data_processed, aes(timepoint, mean, group = condition, color = condition)) +
+  geom_line() +
+  geom_point() +
+  facet_wrap(~ outcome, ncol = 1) +
+  scale_color_viridis_d(begin = 0.3, end = 0.7) +
   theme_linedraw() +
   ylim(0, 30) +
   ylab("Mean score") +
