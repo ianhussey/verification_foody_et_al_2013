@@ -111,10 +111,16 @@ round_all_but_p_values <- function(output, digits = 2){
 
 ```{r}
 
+# data from Foody et al. 2013
+data_processed_publication <- read_csv("../../../data/processed/foody et al 2013 publication/data_processed.csv") 
+
 data_processed <- read_csv("../../../data/processed/foody 2013 thesis experiment 10/data_processed.csv") 
 
 data_postintervention <- data_processed |>
   filter(timepoint == "postintervention")
+
+data_baseline <- data_processed |>
+  filter(timepoint == "baseline")
 
 sample_size <- data_processed |>
   distinct(n) |>
@@ -189,7 +195,7 @@ data_processed |>
 
 data_processed_replication <- data_processed
 
-bind_rows(data_processed_published,
+bind_rows(data_processed_publication,
           data_processed_replication) |> # loaded from other Rmd file
   group_by(timepoint, condition) |>
   summarize(mean = mean(mean)) |>
@@ -509,7 +515,7 @@ p_dist_ci <-
                 aes(color = "Hierarchy")) +
   scale_colour_manual(values = c("black", "grey"),
                       labels = c("Distinction", "Hierarchy")) +
-  theme_classic() +
+  theme_linedraw() +
   xlim(0,100) +
   ylab("") +
   theme(axis.text.y = element_blank(),
@@ -534,7 +540,7 @@ p_dist_sem <-
                 aes(color = "Hierarchy")) +
   scale_colour_manual(values = c("black", "grey"),
                       labels = c("Distinction", "Hierarchy")) +
-  theme_classic() +
+  theme_linedraw() +
   xlim(0,100) +
   ylab("") +
   theme(axis.text.y = element_blank(),
@@ -623,7 +629,7 @@ p_combined <-
                      limits = c(-0.7, 1.75)) +
   coord_flip() +
   scale_color_viridis_d(begin = 0.3, end = 0.7, direction = -1) +
-  theme_classic() +
+  theme_linedraw() +
   xlab("") +
   ylab("Hedges' g") +
   theme(legend.position = "none") +
@@ -633,6 +639,158 @@ p_combined
 
 ggplot2::ggsave(filename = "plots/effect size comparisons.pdf", 
                 plot     = p_combined,
+                device   = "pdf",
+                width    = 5, 
+                height   = 4, 
+                units    = "in")
+
+```
+
+# Comparing conditions at postinduction adjusting for baseline
+
+Using Morris' adjustment (Morris, 2008, doi: 10.1177/1094428106291059)
+
+```{r fig.height=4, fig.width=5.5}
+
+es_assuming_ci_baseline <- data_baseline |>
+  select(-sd_assuming_sem) |>
+  rename(outcome_measure = outcome) |>
+  pivot_wider(names_from = condition, 
+              values_from = c(mean, sd_assuming_ci, n)) |>
+  group_by(outcome_measure) |>
+  do(t_test_from_descriptives(m1 = .$mean_distinction, 
+                              m2 = .$mean_hierarchy,
+                              sd1 = .$sd_assuming_ci_distinction,
+                              sd2 = .$sd_assuming_ci_hierarchy,
+                              n1 = .$n_distinction,
+                              n2 = .$n_hierarchy)) |>
+  ungroup() |>
+  mutate(outcome_measure = str_to_sentence(outcome_measure))
+
+es_assuming_ci_pooled_baseline <- 
+  bind_rows(
+    es_assuming_ci_baseline,
+    t_test_from_descriptives(
+      m1 = mean(c(data_baseline$mean[data_baseline$outcome == "discomfort" & data_baseline$condition == "distinction"],
+                  data_baseline$mean[data_baseline$outcome == "anxiety" & data_baseline$condition == "distinction"],
+                  data_baseline$mean[data_baseline$outcome == "stress" & data_baseline$condition == "distinction"])),
+      m2 = mean(c(data_baseline$mean[data_baseline$outcome == "discomfort" & data_baseline$condition == "hierarchy"],
+                  data_baseline$mean[data_baseline$outcome == "anxiety" & data_baseline$condition == "hierarchy"],
+                  data_baseline$mean[data_baseline$outcome == "stress" & data_baseline$condition == "hierarchy"])),
+      sd1 = sqrt((data_baseline$sd_assuming_ci[data_baseline$outcome == "discomfort" & data_baseline$condition == "distinction"]^2 + 
+                    data_baseline$sd_assuming_ci[data_baseline$outcome == "anxiety" & data_baseline$condition == "distinction"]^2 + 
+                    data_baseline$sd_assuming_ci[data_baseline$outcome == "stress" & data_baseline$condition == "distinction"]^2)/3),
+      sd2 = sqrt((data_baseline$sd_assuming_ci[data_baseline$outcome == "discomfort" & data_baseline$condition == "hierarchy"]^2 + 
+                    data_baseline$sd_assuming_ci[data_baseline$outcome == "anxiety" & data_baseline$condition == "hierarchy"]^2 + 
+                    data_baseline$sd_assuming_ci[data_baseline$outcome == "stress" & data_baseline$condition == "hierarchy"]^2)/3),
+      n1 = sample_size,
+      n2 = sample_size
+    ) |>
+      mutate(outcome_measure = "Distress (pooled)")
+  ) |>
+  mutate(outcome_measure = fct_relevel(outcome_measure, "Distress (pooled)", "Stress", "Anxiety", "Discomfort")) |>
+  select(outcome_measure, 
+         hedges_g)
+
+es_assuming_sem_baseline <- data_baseline |>
+  select(-sd_assuming_ci) |>
+  rename(outcome_measure = outcome) |>
+  pivot_wider(names_from = condition, 
+              values_from = c(mean, sd_assuming_sem, n)) |>
+  group_by(outcome_measure) |>
+  do(t_test_from_descriptives(m1 = .$mean_distinction, 
+                              m2 = .$mean_hierarchy,
+                              sd1 = .$sd_assuming_sem_distinction,
+                              sd2 = .$sd_assuming_sem_hierarchy,
+                              n1 = .$n_distinction,
+                              n2 = .$n_hierarchy)) |>
+  ungroup() |>
+  mutate(outcome_measure = str_to_sentence(outcome_measure)) |>
+  mutate(outcome_measure = fct_relevel(outcome_measure, "Stress", "Anxiety", "Discomfort")) |>
+  select(outcome_measure, 
+         hedges_g)
+
+es_assuming_sem_pooled_baseline <- 
+  bind_rows(
+    es_assuming_sem_baseline,
+    t_test_from_descriptives(
+      m1 = mean(c(data_baseline$mean[data_baseline$outcome == "discomfort" & data_baseline$condition == "distinction"],
+                  data_baseline$mean[data_baseline$outcome == "anxiety" & data_baseline$condition == "distinction"],
+                  data_baseline$mean[data_baseline$outcome == "stress" & data_baseline$condition == "distinction"])),
+      m2 = mean(c(data_baseline$mean[data_baseline$outcome == "discomfort" & data_baseline$condition == "hierarchy"],
+                  data_baseline$mean[data_baseline$outcome == "anxiety" & data_baseline$condition == "hierarchy"],
+                  data_baseline$mean[data_baseline$outcome == "stress" & data_baseline$condition == "hierarchy"])),
+      sd1 = sqrt((data_baseline$sd_assuming_sem[data_baseline$outcome == "discomfort" & data_baseline$condition == "distinction"]^2 + 
+                    data_baseline$sd_assuming_sem[data_baseline$outcome == "anxiety" & data_baseline$condition == "distinction"]^2 + 
+                    data_baseline$sd_assuming_sem[data_baseline$outcome == "stress" & data_baseline$condition == "distinction"]^2)/3),
+      sd2 = sqrt((data_baseline$sd_assuming_sem[data_baseline$outcome == "discomfort" & data_baseline$condition == "hierarchy"]^2 + 
+                    data_baseline$sd_assuming_sem[data_baseline$outcome == "anxiety" & data_baseline$condition == "hierarchy"]^2 + 
+                    data_baseline$sd_assuming_sem[data_baseline$outcome == "stress" & data_baseline$condition == "hierarchy"]^2)/3),
+      n1 = sample_size,
+      n2 = sample_size
+    ) |>
+      mutate(outcome_measure = "Distress (pooled)")
+  ) |>
+  mutate(outcome_measure = fct_relevel(outcome_measure, "Distress (pooled)", "Stress", "Anxiety", "Discomfort")) |>
+  select(outcome_measure,
+         hedges_g)
+
+data_combined_baseline <- 
+  bind_rows(mutate(es_assuming_ci_pooled_baseline, 
+                   interval = "95% CI",
+                   interval_text = "Assuming reported intervals were 95% CIs"),
+            mutate(es_assuming_sem_pooled_baseline, 
+                   interval = "SEM",
+                   interval_text = "Assuming reported intervals were SEMs")) |>
+  mutate(color = c("original", "original", "original", "new", 
+                   "original", "original", "original", "new")) |>
+  select(interval, 
+         outcome_measure, 
+         hedges_g_baseline = hedges_g)
+
+data_combined_all <- 
+  left_join(data_combined,
+            data_combined_baseline, 
+            by = c("interval", "outcome_measure")) |>
+  rename(hedges_g_postintervention = hedges_g) |>
+  mutate(adjusted_hedges_g = hedges_g_postintervention - hedges_g_baseline,
+         adjusted_lower = lower - hedges_g_baseline,
+         adjusted_upper = upper - hedges_g_baseline) |>
+  select(interval, interval_text, outcome_measure, color, 
+         hedges_g_baseline, hedges_g_postintervention,
+         adjusted_hedges_g, adjusted_lower, adjusted_upper)
+
+table_3 <- data_combined_all |>
+  select(-color) |>
+  mutate_if(is.numeric, round_half_up, digits = 2) 
+
+write_csv(table_3, "tables/table_3.csv")
+
+table_3 |>
+  kable() |>
+  kable_classic(full_width = FALSE)
+#add_header_above(c("", "", "Hierarchy" = 3, "Distinction" = 3, "", "CI" = 2, "", "", "", ""))
+
+
+
+p_combined_adjusted <- ggplot(data_combined_all, aes(outcome_measure, adjusted_hedges_g, color = color)) +
+  geom_hline(yintercept = 0, linetype = "dotted") +
+  geom_point(shape = "square") +
+  geom_linerange(aes(ymin = adjusted_lower, ymax = adjusted_upper)) +
+  scale_y_continuous(breaks = scales::breaks_width(0.5),
+                     limits = c(-1.2, 2)) +
+  coord_flip() +
+  scale_color_viridis_d(begin = 0.3, end = 0.7, direction = -1) +
+  theme_linedraw() +
+  xlab("") +
+  ylab("Adjusted Hedges' g") +
+  theme(legend.position = "none") +
+  facet_wrap(~ interval_text, ncol = 1)
+
+p_combined_adjusted
+
+ggplot2::ggsave(filename = "plots/effect size comparisons adjusted.pdf", 
+                plot     = p_combined_adjusted,
                 device   = "pdf",
                 width    = 5, 
                 height   = 4, 
