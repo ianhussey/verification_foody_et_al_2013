@@ -60,7 +60,7 @@ round_p <- function(p, digits = 3){
 #' @param n2: the sample 2 sample size
 #' @param m0: the null value for the difference in means to be tested for. Default is 0. 
 #' @param equal.variance: whether or not to assume equal variance. Default is FALSE as in the base R t.test function, i.e., a Welch's t-test. Setting to TRUE will produce a Student's t-test.
-t_test_from_descriptives <- function(m1, m2, sd1, sd2, n1, n2, m0 = 0, equal.variance = FALSE) {
+t_test_from_descriptives <- function(m1, m2, sd1, sd2, n1, n2, m0 = 0, equal.variance = FALSE, alpha = 0.05) {
   require(psych)
   
   if(equal.variance == FALSE) {
@@ -75,10 +75,10 @@ t_test_from_descriptives <- function(m1, m2, sd1, sd2, n1, n2, m0 = 0, equal.var
   
   t <- (m1 - m2 - m0)/se 
   d <- (m1 - m2) / sqrt((sd1^2 + sd2^2)/2)
-  d_cis <- psych::cohen.d.ci(d, n2 = n2, n1 = n1, alpha = .05)
+  d_cis <- psych::cohen.d.ci(d, n2 = n2, n1 = n1, alpha = alpha)
   
   g <- d * ( 1 - (3 / ((4*(n1 + n2 - 2)) - 1)) ) # https://stats.stackexchange.com/q/434978 by Wolfgang Vichtbauer, creator of metafor package
-  g_cis <- psych::cohen.d.ci(g, n2 = n2, n1 = n1, alpha = .05)
+  g_cis <- psych::cohen.d.ci(g, n2 = n2, n1 = n1, alpha = alpha)
   
   dat <- data.frame(m1 = m1, 
                     sd1 = sd1, 
@@ -185,13 +185,13 @@ bind_cols(statistical_results |>
 
 # Corrected *p* values for RM-ANOVAs
 
-*p* values extracted from text and corrected via Holm corrections
+*p* values extracted from text and corrected via Bonferroni corrections
 
-Foody et al. (2013) reported *p* values for their RM-ANOVAs' interaction effects of .45, .33, .04. Using Holm corrections for mutiple testing these would be:
+Foody et al. (2013) reported *p* values for their RM-ANOVAs' interaction effects of .45, .33, .04. Using Bonferroni corrections for multiple testing these would be:
 
 ```{r}
 
-p.adjust(c(.45, .33, .04), method = "holm") |>
+p.adjust(c(.45, .33, .04), method = "bonferroni") |>
   round_p()
 
 ```
@@ -247,7 +247,7 @@ Using independent Welch's *t*-tests
 
 ### Outcome measures reported in Foody et al. (2013)
 
-Adjusted p values via Holm corrections
+Adjusted p values via Bonferroni corrections
 
 ```{r fig.height=2, fig.width=5}
 
@@ -262,10 +262,11 @@ es_assuming_ci <- data_postintervention |>
                               sd1 = .$sd_assuming_ci_distinction,
                               sd2 = .$sd_assuming_ci_hierarchy,
                               n1 = .$n_distinction,
-                              n2 = .$n_hierarchy)) |>
+                              n2 = .$n_hierarchy,
+                              alpha = 0.05)) |> # bonferroni corrections
   ungroup() |>
   mutate(outcome_measure = str_to_sentence(outcome_measure)) |>
-  mutate(p_adjusted = p.adjust(p, method = "holm"),
+  mutate(p_adjusted = p.adjust(p, method = "bonferroni"),
          hedges_g_se = (hedges_g_ci_upper - hedges_g_ci_lower)/(1.96*2)) |>
   mutate(outcome_measure = fct_relevel(outcome_measure, "Stress", "Anxiety", "Discomfort")) |>
   select(outcome_measure, 
@@ -390,7 +391,7 @@ This method, which represents an inference method that ties the single hypothesi
 
 ### Outcome measures reported in Foody et al. (2013)
 
-Adjusted p values via Holm corrections
+Adjusted p values via Bonferroni corrections
 
 ```{r fig.height=2, fig.width=5}
 
@@ -405,10 +406,11 @@ es_assuming_sem <- data_postintervention |>
                               sd1 = .$sd_assuming_sem_distinction,
                               sd2 = .$sd_assuming_sem_hierarchy,
                               n1 = .$n_distinction,
-                              n2 = .$n_hierarchy)) |>
+                              n2 = .$n_hierarchy,
+                              alpha = 0.05)) |> # bonferroni corrections
   ungroup() |>
   mutate(outcome_measure = str_to_sentence(outcome_measure)) |>
-  mutate(p_adjusted = p.adjust(p, method = "holm"),
+  mutate(p_adjusted = p.adjust(p, method = "bonferroni"),
          hedges_g_se = (hedges_g_ci_upper - hedges_g_ci_lower)/(1.96*2)) |>
   mutate(outcome_measure = fct_relevel(outcome_measure, "Stress", "Anxiety", "Discomfort")) |>
   select(outcome_measure, 
@@ -690,7 +692,8 @@ es_assuming_ci_baseline <- data_baseline |>
                               sd1 = .$sd_assuming_ci_distinction,
                               sd2 = .$sd_assuming_ci_hierarchy,
                               n1 = .$n_distinction,
-                              n2 = .$n_hierarchy)) |>
+                              n2 = .$n_hierarchy,
+                              alpha = 0.05)) |> # bonferroni corrections
   ungroup() |>
   mutate(outcome_measure = str_to_sentence(outcome_measure))
 
@@ -730,7 +733,8 @@ es_assuming_sem_baseline <- data_baseline |>
                               sd1 = .$sd_assuming_sem_distinction,
                               sd2 = .$sd_assuming_sem_hierarchy,
                               n1 = .$n_distinction,
-                              n2 = .$n_hierarchy)) |>
+                              n2 = .$n_hierarchy,
+                              alpha = 0.05)) |> # bonferroni corrections
   ungroup() |>
   mutate(outcome_measure = str_to_sentence(outcome_measure)) |>
   mutate(outcome_measure = fct_relevel(outcome_measure, "Stress", "Anxiety", "Discomfort")) |>
@@ -804,8 +808,7 @@ p_combined_adjusted <- ggplot(data_combined_all, aes(outcome_measure, adjusted_h
   geom_hline(yintercept = 0, linetype = "dotted") +
   geom_point(shape = "square") +
   geom_linerange(aes(ymin = adjusted_lower, ymax = adjusted_upper)) +
-  scale_y_continuous(breaks = scales::breaks_width(0.5),
-                     limits = c(-1.2, 2)) +
+  scale_y_continuous(breaks = scales::breaks_width(0.5)) +
   coord_flip() +
   scale_color_viridis_d(begin = 0.3, end = 0.7, direction = -1) +
   theme_linedraw() +
@@ -816,7 +819,7 @@ p_combined_adjusted <- ggplot(data_combined_all, aes(outcome_measure, adjusted_h
 
 p_combined_adjusted
 
-ggplot2::ggsave(filename = "plots/effect size comparisons adjusted.pdf", 
+ggplot2::ggsave(filename = "plots/effect size comparisons morris.pdf", 
                 plot     = p_combined_adjusted,
                 device   = "pdf",
                 width    = 5, 
