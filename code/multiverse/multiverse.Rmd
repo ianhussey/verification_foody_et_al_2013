@@ -36,7 +36,8 @@ library(kableExtra)
 library(janitor)
 library(forcats)
 library(ggtext)
-library(patchwork)
+#library(patchwork)
+library(cowplot)
 
 dir.create("plots")
 
@@ -156,11 +157,12 @@ data_median_es_original <- data_combined |>
 p_estimates_original <- 
   ggplot(data_estimate_plot_original, aes(rnk, hedges_g, color = significant)) +
   geom_hline(yintercept = 0, linetype = "dotted") +
-  geom_hline(data = data_median_es_original,
-             aes(yintercept = median_es), linetype = "solid", color = "orange") +
+  #geom_hline(data = data_median_es_original,
+  #           aes(yintercept = median_es), linetype = "solid", color = "orange") +
   geom_point(shape = "square", size = 2) +
   geom_linerange(aes(ymin = lower, ymax = upper)) +
   scale_y_continuous(breaks = scales::breaks_width(0.5)) + 
+  scale_x_continuous(NULL, expand = c(.02, .02)) +
   ylab("Hedges' g") +
   theme_classic() +
   theme(axis.line.x = element_blank(),
@@ -198,7 +200,7 @@ p_specs_original <-
   geom_point(size = 2, shape = "square") +
   facet_grid(name ~ ., space = "free_y", scales = "free_y", switch = "y") +
   guides(color = "none") +
-  #scale_x_continuous(NULL, expand = c(.01, .01)) +
+  scale_x_continuous(NULL, expand = c(.02, .02)) +
   ylab("Analytic choice") +
   theme_classic() +
   theme(strip.placement = "outside",
@@ -214,7 +216,14 @@ p_specs_original <-
   scale_color_brewer(palette = "Dark2")
 
 
-p_multiverse_original <- p_estimates_original + p_specs_original + plot_layout(ncol = 1, heights = c(0.7, 1))
+# p_multiverse_original <- p_estimates_original + p_specs_original + plot_layout(ncol = 1, heights = c(0.7, 1))
+
+p_multiverse_original <- cowplot::plot_grid(p_estimates_original, 
+                                            p_specs_original, 
+                                            axis = "bltr", 
+                                            align = "v", 
+                                            ncol = 1, 
+                                            rel_heights = c(0.7, 1))
 
 p_multiverse_original
 
@@ -242,11 +251,12 @@ data_median_es_replication <- data_combined |>
 p_estimates_replication <- 
   ggplot(data_estimate_plot_replication, aes(rnk, hedges_g, color = significant)) +
   geom_hline(yintercept = 0, linetype = "dotted") +
-  geom_hline(data = data_median_es_replication,
-             aes(yintercept = median_es), linetype = "solid", color = "orange") +
+  #geom_hline(data = data_median_es_replication,
+  #           aes(yintercept = median_es), linetype = "solid", color = "orange") +
   geom_point(shape = "square", size = 2) +
   geom_linerange(aes(ymin = lower, ymax = upper)) +
   scale_y_continuous(breaks = scales::breaks_width(0.5)) + 
+  scale_x_continuous(NULL, expand = c(.02, .02)) +
   ylab("Hedges' g") +
   theme_classic() +
   theme(axis.line.x = element_blank(),
@@ -284,7 +294,7 @@ p_specs_replication <-
   geom_point(size = 2, shape = "square") +
   facet_grid(name ~ ., space = "free_y", scales = "free_y", switch = "y") +
   guides(color = "none") +
-  #scale_x_continuous(NULL, expand = c(.01, .01)) +
+  scale_x_continuous(NULL, expand = c(.02, .02)) +
   ylab("Analytic choice") +
   theme_classic() +
   theme(strip.placement = "outside",
@@ -300,7 +310,14 @@ p_specs_replication <-
   scale_color_brewer(palette = "Dark2")
 
 
-p_multiverse_replication <- p_estimates_replication + p_specs_replication + plot_layout(ncol = 1, heights = c(0.7, 1))
+# p_multiverse_replication <- p_estimates_replication + p_specs_replication + plot_layout(ncol = 1, heights = c(0.7, 1))
+
+p_multiverse_replication <- cowplot::plot_grid(p_estimates_replication, 
+                                               p_specs_replication, 
+                                               axis = "bltr", 
+                                               align = "v", 
+                                               ncol = 1, 
+                                               rel_heights = c(0.7, 1))
 
 p_multiverse_replication
 
