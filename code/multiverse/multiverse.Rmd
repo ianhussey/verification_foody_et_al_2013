@@ -30,8 +30,6 @@ knitr::opts_chunk$set(message = FALSE,
 
 ```{r}
 
-# dependencies
-
 library(tidyverse)
 library(knitr)
 library(kableExtra)
@@ -39,6 +37,8 @@ library(janitor)
 library(forcats)
 library(ggtext)
 library(patchwork)
+
+dir.create("plots")
 
 ```
 
@@ -48,42 +48,42 @@ library(patchwork)
 
 data_combined <- 
   bind_rows(
-    read_csv("foody et al 2013 publication/analysis/tables/table_1.csv",
+    read_csv("../foody et al 2013 publication/analysis/tables/table_1.csv",
              show_col_types = FALSE) |>
       mutate(study = "original",
              multiple_testing_corrections = FALSE, 
              control_for_baseline = FALSE) |>
       select(study, interval, outcome_measure, control_for_baseline, multiple_testing_corrections, 
              hedges_g, lower, upper),
-    read_csv("foody et al 2013 publication/analysis/tables/table_2.csv",
+    read_csv("../foody et al 2013 publication/analysis/tables/table_2.csv",
              show_col_types = FALSE) |>
       mutate(study = "original",
              multiple_testing_corrections = FALSE, 
              control_for_baseline = FALSE) |>
       select(study, interval, outcome_measure, control_for_baseline, multiple_testing_corrections, 
              hedges_g, lower, upper),
-    read_csv("foody et al 2013 publication/analysis/tables/table_3.csv",
+    read_csv("../foody et al 2013 publication/analysis/tables/table_3.csv",
              show_col_types = FALSE) |>
       mutate(study = "original",
              multiple_testing_corrections = FALSE, 
              control_for_baseline = TRUE) |>
       select(study, interval, outcome_measure, control_for_baseline, multiple_testing_corrections, 
              hedges_g = adjusted_hedges_g, lower = adjusted_lower, upper = adjusted_upper),
-    read_csv("foody et al 2013 publication/analysis/tables/table_1_bonferroni.csv",
+    read_csv("../foody et al 2013 publication/analysis/tables/table_1_bonferroni.csv",
              show_col_types = FALSE) |>
       mutate(study = "original",
              multiple_testing_corrections = TRUE, 
              control_for_baseline = FALSE) |>
       select(study, interval, outcome_measure, control_for_baseline, multiple_testing_corrections, 
              hedges_g, lower, upper),
-    read_csv("foody et al 2013 publication/analysis/tables/table_2_bonferroni.csv",
+    read_csv("../foody et al 2013 publication/analysis/tables/table_2_bonferroni.csv",
              show_col_types = FALSE) |>
       mutate(study = "original",
              multiple_testing_corrections = TRUE, 
              control_for_baseline = FALSE) |>
       select(study, interval, outcome_measure, control_for_baseline, multiple_testing_corrections, 
              hedges_g, lower, upper),
-    read_csv("foody et al 2013 publication/analysis/tables/table_3_bonferroni.csv",
+    read_csv("../foody et al 2013 publication/analysis/tables/table_3_bonferroni.csv",
              show_col_types = FALSE) |>
       mutate(study = "original",
              multiple_testing_corrections = TRUE, 
@@ -91,42 +91,42 @@ data_combined <-
       select(study, interval, outcome_measure, control_for_baseline, multiple_testing_corrections, 
              hedges_g = adjusted_hedges_g, lower = adjusted_lower, upper = adjusted_upper),
     
-    read_csv("foody 2013 thesis experiment 10/analysis/tables/table_1.csv",
+    read_csv("../foody 2013 thesis experiment 10/analysis/tables/table_1.csv",
              show_col_types = FALSE) |>
       mutate(study = "replication",
              multiple_testing_corrections = FALSE, 
              control_for_baseline = FALSE) |>
       select(study, interval, outcome_measure, control_for_baseline, multiple_testing_corrections, 
              hedges_g, lower, upper),
-    read_csv("foody 2013 thesis experiment 10/analysis/tables/table_2.csv",
+    read_csv("../foody 2013 thesis experiment 10/analysis/tables/table_2.csv",
              show_col_types = FALSE) |>
       mutate(study = "replication",
              multiple_testing_corrections = FALSE, 
              control_for_baseline = FALSE) |>
       select(study, interval, outcome_measure, control_for_baseline, multiple_testing_corrections, 
              hedges_g, lower, upper),
-    read_csv("foody 2013 thesis experiment 10/analysis/tables/table_3.csv",
+    read_csv("../foody 2013 thesis experiment 10/analysis/tables/table_3.csv",
              show_col_types = FALSE) |>
       mutate(study = "replication",
              multiple_testing_corrections = FALSE, 
              control_for_baseline = TRUE) |>
       select(study, interval, outcome_measure, control_for_baseline, multiple_testing_corrections, 
              hedges_g = adjusted_hedges_g, lower = adjusted_lower, upper = adjusted_upper),
-    read_csv("foody 2013 thesis experiment 10/analysis/tables/table_1_bonferroni.csv",
+    read_csv("../foody 2013 thesis experiment 10/analysis/tables/table_1_bonferroni.csv",
              show_col_types = FALSE) |>
       mutate(study = "replication",
              multiple_testing_corrections = TRUE, 
              control_for_baseline = FALSE) |>
       select(study, interval, outcome_measure, control_for_baseline, multiple_testing_corrections, 
              hedges_g, lower, upper),
-    read_csv("foody 2013 thesis experiment 10/analysis/tables/table_2_bonferroni.csv",
+    read_csv("../foody 2013 thesis experiment 10/analysis/tables/table_2_bonferroni.csv",
              show_col_types = FALSE) |>
       mutate(study = "replication",
              multiple_testing_corrections = TRUE, 
              control_for_baseline = FALSE) |>
       select(study, interval, outcome_measure, control_for_baseline, multiple_testing_corrections, 
              hedges_g, lower, upper),
-    read_csv("foody 2013 thesis experiment 10/analysis/tables/table_3_bonferroni.csv",
+    read_csv("../foody 2013 thesis experiment 10/analysis/tables/table_3_bonferroni.csv",
              show_col_types = FALSE) |>
       mutate(study = "replication",
              multiple_testing_corrections = TRUE, 
@@ -189,6 +189,8 @@ data_spec_plot_original <- data_combined |>
          Bonferroni = as.factor(multiple_testing_corrections)) |>
   dplyr::select(Interval, Outcome, Baseline, Bonferroni, rnk) |> 
   tidyr::pivot_longer(c(Interval, Outcome, Baseline, Bonferroni)) |> 
+  mutate(name = fct_relevel(name, "Bonferroni", "Baseline", "Outcome", "Interval"),
+         value = fct_relevel(value, "Anxiety", "Discomfort", "Stress", "Distress (pooled)")) |>
   arrange(rnk)
 
 p_specs_original <- 
@@ -197,7 +199,7 @@ p_specs_original <-
   facet_grid(name ~ ., space = "free_y", scales = "free_y", switch = "y") +
   guides(color = "none") +
   #scale_x_continuous(NULL, expand = c(.01, .01)) +
-  ylab("Analytic choices") +
+  ylab("Analytic choice") +
   theme_classic() +
   theme(strip.placement = "outside",
         strip.background = element_rect(fill = NA, colour = NA),
@@ -212,10 +214,17 @@ p_specs_original <-
   scale_color_brewer(palette = "Dark2")
 
 
-p_estimates_original + p_specs_original + plot_layout(ncol = 1, heights = c(0.7, 1))
+p_multiverse_original <- p_estimates_original + p_specs_original + plot_layout(ncol = 1, heights = c(0.7, 1))
+
+p_multiverse_original
+
+ggsave(filename = "plots/p_multiverse_original.pdf",
+       plot = p_multiverse_original, 
+       device = "pdf",
+       width = 6,
+       height = 5)
 
 ```
-
 
 ## Replication
 
@@ -266,6 +275,8 @@ data_spec_plot_replication <- data_combined |>
          Bonferroni = as.factor(multiple_testing_corrections)) |>
   dplyr::select(Interval, Outcome, Baseline, Bonferroni, rnk) |> 
   tidyr::pivot_longer(c(Interval, Outcome, Baseline, Bonferroni)) |> 
+  mutate(name = fct_relevel(name, "Bonferroni", "Baseline", "Outcome", "Interval"),
+         value = fct_relevel(value, "Anxiety", "Discomfort", "Stress", "Distress (pooled)")) |>
   arrange(rnk)
 
 p_specs_replication <- 
@@ -274,7 +285,7 @@ p_specs_replication <-
   facet_grid(name ~ ., space = "free_y", scales = "free_y", switch = "y") +
   guides(color = "none") +
   #scale_x_continuous(NULL, expand = c(.01, .01)) +
-  ylab("Analytic choices") +
+  ylab("Analytic choice") +
   theme_classic() +
   theme(strip.placement = "outside",
         strip.background = element_rect(fill = NA, colour = NA),
@@ -289,7 +300,15 @@ p_specs_replication <-
   scale_color_brewer(palette = "Dark2")
 
 
-p_estimates_replication + p_specs_replication + plot_layout(ncol = 1, heights = c(0.7, 1))
+p_multiverse_replication <- p_estimates_replication + p_specs_replication + plot_layout(ncol = 1, heights = c(0.7, 1))
+
+p_multiverse_replication
+
+ggsave(filename = "plots/p_multiverse_replication.pdf",
+       plot = p_multiverse_replication, 
+       device = "pdf",
+       width = 6,
+       height = 5)
 
 ```
 
