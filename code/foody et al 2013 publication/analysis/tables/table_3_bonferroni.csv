@@ -1,0 +1,9 @@
+interval,interval_text,outcome_measure,hedges_g_baseline,hedges_g_postintervention,adjusted_hedges_g,adjusted_lower,adjusted_upper
+95% CI,Assuming reported intervals were 95% CIs,Anxiety,0.55,0.11,-0.43,-1.23,0.36
+95% CI,Assuming reported intervals were 95% CIs,Discomfort,0.56,0.96,0.4,-0.45,1.24
+95% CI,Assuming reported intervals were 95% CIs,Stress,-0.21,0.96,1.17,0.32,2.01
+95% CI,Assuming reported intervals were 95% CIs,Distress (pooled),0.27,0.6,0.34,-0.34,1
+SEM,Assuming reported intervals were SEMs,Anxiety,0.28,0.06,-0.22,-1.02,0.58
+SEM,Assuming reported intervals were SEMs,Discomfort,0.29,0.49,0.21,-0.61,1.01
+SEM,Assuming reported intervals were SEMs,Stress,-0.11,0.49,0.6,-0.22,1.41
+SEM,Assuming reported intervals were SEMs,Distress (pooled),0.14,0.31,0.17,-0.49,0.83

@@ -602,7 +602,7 @@ table_1 <- data_combined |>
          p_adj = round_p(p_adj)) |>
   round_all_but_p_values() 
 
-write_csv(table_1, "tables/table_1.csv")
+write_csv(table_1, "tables/table_1_bonferroni.csv")
 
 table_1 |>
   kable() |>
@@ -615,7 +615,7 @@ table_2 <- data_combined |>
   mutate(p = round_p(p)) |>
   round_all_but_p_values() 
 
-write_csv(table_2, "tables/table_2.csv")
+write_csv(table_2, "tables/table_2_bonferroni.csv")
 
 table_2 |>
   kable() |>
@@ -768,7 +768,7 @@ table_3 <- data_combined_all |>
   select(-color) |>
   mutate_if(is.numeric, round_half_up, digits = 2) 
 
-write_csv(table_3, "tables/table_3.csv")
+write_csv(table_3, "tables/table_3_bonferroni.csv")
 
 table_3 |>
   kable() |>
@@ -903,7 +903,7 @@ data_change |>
   kable() |>
   kable_classic(full_width = FALSE)
 
-write_csv(data_change, "tables/change baseline to postinduction.csv")
+write_csv(data_change, "tables/change baseline to postinduction_bonferroni.csv")
 
 ```
 
