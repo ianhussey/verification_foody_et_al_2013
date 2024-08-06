@@ -1,0 +1,96 @@
+---
+title: "Analysis of Foody et al. (2015)"
+subtitle: "Data processing"
+author: "Ian Hussey"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    code_folding: hide
+    highlight: haddock
+    theme: flatly
+    toc: yes
+    toc_float: yes
+---
+
+```{r, include=FALSE}
+
+knitr::opts_chunk$set(message = FALSE,
+                      warning = FALSE)
+
+```
+
+# Dependencies 
+
+```{r}
+
+# dependencies
+library(dplyr)
+library(tidyr)
+library(readr)
+library(readxl)
+library(stringr)
+library(forcats)
+
+# create director
+dir.create("../../data/processed/")
+
+# turn off scientific notation
+options(scipen = 999)
+
+```
+
+# Get data
+
+```{r}
+
+data_extracted <- read_xlsx("../../../data/extracted/foody et al 2015 publication/data_extracted.xlsx") 
+
+data_processed <- data_extracted |>
+  select(outcome, timepoint, starts_with("self")) |>
+  pivot_longer(cols = starts_with("self"),
+               names_to = c("target", "relation", "metric"),
+               names_sep = "_",
+               values_to = "value") |>
+  pivot_wider(names_from = "metric",
+              values_from = "value") |>
+  mutate(n_reported_in_text = 12,
+         outcome = tolower(outcome)) |>
+  filter(!str_detect(timepoint, "2")) |>
+  mutate(timepoint = tolower(timepoint),
+         timepoint = str_remove(timepoint, " 1")) |>
+  rename(condition = relation,
+         mean = m)
+
+```
+
+# Write to disk
+
+```{r}
+
+#dir.create("../../../data/extracted/foody et al 2015 publication/")
+dir.create("../../../data/processed/foody et al 2015 publication/")
+
+#write_csv(data_processed, "../../../data/extracted/foody et al 2015 publication/data_extracted_all.csv")
+
+data_processed |>
+  #filter(timepoint %in% c("postinduction", "postintervention")) |>
+  select(outcome, 
+         timepoint, 
+         condition, 
+         n = n_reported_in_text, 
+         mean, 
+         sd) |>
+  write_csv("../../../data/processed/foody et al 2015 publication/data_processed.csv")
+
+```
+
+# Session info
+
+```{r}
+
+sessionInfo()
+
+```
+
+
+

@@ -1,0 +1,631 @@
+---
+title: "Analysis of Foody et al. (2015)"
+author: "Ian Hussey"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    code_folding: hide
+    highlight: haddock
+    theme: flatly
+    toc: yes
+    toc_float: yes
+---
+
+```{r, include=FALSE}
+
+knitr::opts_chunk$set(message = FALSE,
+                      warning = FALSE)
+
+```
+
+# Dependencies and functions
+
+```{r}
+
+# dependencies
+
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+library(janitor)
+library(forcats)
+library(patchwork)
+
+# create director
+dir.create("plots/")
+dir.create("tables/")
+
+
+# functions
+
+#' Print p values to a given number of digits, always rounding up
+#' @param p: p value to be rounded
+#' @param digits: Number of digits to round to
+round_p <- function(p, digits = 3){
+  ceiling(as.numeric(p)*10^digits)/10^digits
+}
+
+
+#' Calculate an independent t test from summary statistics
+#' @source https://stats.stackexchange.com/q/30450. Improvements made to readability and documentation, added effect sizes.
+#' @param m1: the sample 1 mean
+#' @param m2: the sample 2 mean
+#' @param sd1: the sample 1 SD
+#' @param sd2: the sample 2 SD
+#' @param n1: the sample 2 sample size
+#' @param n2: the sample 2 sample size
+#' @param m0: the null value for the difference in means to be tested for. Default is 0. 
+#' @param equal.variance: whether or not to assume equal variance. Default is FALSE as in the base R t.test function, i.e., a Welch's t-test. Setting to TRUE will produce a Student's t-test.
+t_test_from_descriptives <- function(m1, m2, sd1, sd2, n1, n2, m0 = 0, equal.variance = FALSE, alpha = 0.05) {
+  require(psych)
+
+  if(equal.variance == FALSE) {
+    se <- sqrt( (sd1^2/n1) + (sd2^2/n2) )
+    # welch-satterthwaite df
+    df <- ( (sd1^2/n1 + sd2^2/n2)^2 )/( (sd1^2/n1)^2/(n1-1) + (sd2^2/n2)^2/(n2-1) )
+  } else {
+    # pooled standard deviation, scaled by the sample sizes
+    se <- sqrt( (1/n1 + 1/n2) * ((n1-1)*sd1^2 + (n2-1)*sd2^2)/(n1+n2-2) ) 
+    df <- n1+n2-2
+  } 
+  
+  t <- (m1 - m2 - m0)/se 
+  d <- (m1 - m2) / sqrt((sd1^2 + sd2^2)/2)
+  d_cis <- psych::cohen.d.ci(d, n2 = n2, n1 = n1, alpha = alpha)
+  
+  g <- d * ( 1 - (3 / ((4*(n1 + n2 - 2)) - 1)) ) # https://stats.stackexchange.com/q/434978 by Wolfgang Vichtbauer, creator of metafor package
+  g_cis <- psych::cohen.d.ci(g, n2 = n2, n1 = n1, alpha = alpha)
+  
+  dat <- data.frame(m1 = m1, 
+                    sd1 = sd1, 
+                    n1 = n1, 
+                    m2 = m2, 
+                    sd2 = sd2, 
+                    n2 = n2,
+                    mean_difference = m1 - m2,
+                    se = se,
+                    cohens_d = d,
+                    cohens_d_ci_lower = d_cis[1],
+                    cohens_d_ci_upper = d_cis[3],
+                    hedges_g = g,
+                    hedges_g_ci_lower = g_cis[1],
+                    hedges_g_ci_upper = g_cis[3],
+                    t = t, 
+                    df = df,
+                    p = 2 * pt(-abs(t), df))
+  
+  return(dat) 
+}
+
+round_all_but_p_values <- function(output, digits = 2){
+  require(dplyr)
+  
+  output |>
+    mutate(p = as.character(p)) |>
+    mutate_if(is.numeric, janitor::round_half_up, digits = 2)
+}
+
+```
+
+# Get data
+
+```{r}
+
+data_processed <- read_csv("../../../data/processed/foody et al 2015 publication/data_processed.csv") 
+
+data_postintervention <- data_processed |>
+  filter(str_detect(tolower(timepoint), "postintervention"))
+
+data_baseline <- data_processed |>
+  filter(str_detect(tolower(timepoint), "baseline"))
+
+sample_size <- data_processed |>
+  distinct(n) |>
+  pull(n)
+
+# check that length of sample size is 1, ie all are identical so this can be used as a numeric
+length(sample_size) == 1
+
+```
+
+# Corrected *p* values for RM-ANOVAs
+
+*p* values extracted from text and corrected via Bonferroni corrections
+
+Foody et al. (2015) reported *p* values for both their 6X4 and 6X2 RM-ANOVAs' interaction effects that were all non significant:
+
+- Discomfort
+  - 6X4 RM-ANOVA interaction effect: F(5, 42)=.58, p=.88, partial eta squared=.07.
+  - 6X2 RM-ANOVA interaction effect (just hierarchy vs distinction, no self-vs other): F(5, 42)=.25, p=.94, partial eta squared=.03.
+- Anxiety
+  - 6X4 RM-ANOVA interaction effect: F(5, 42) =1, p=.47, partial eta squared=.11.
+  - 6X2 RM-ANOVA interaction effect (just hierarchy vs distinction, no self-vs other): F(5, 42)=.65, p=.67, partial eta squared=.07.
+- Stress
+  - 6X4 RM-ANOVA interaction effect: F(5, 42) =1.71, p=.059, partial eta squared=.17
+  - 6X2 RM-ANOVA interaction effect (just hierarchy vs distinction, no self-vs other): F(5, 42)=.93, p=.47, partial eta squared=.10.
+  
+As such there was no need to correct these Using Bonferroni corrections for multiple testing.
+
+# Reproduce original plot
+
+```{r}
+
+ggplot(data_processed, aes(timepoint, mean, linetype = fct_rev(condition), group = fct_rev(interaction(condition, outcome)), color = outcome)) +
+  geom_line() +
+  geom_point() +
+  #facet_wrap(~ outcome, ncol = 1) +
+  theme_linedraw() +
+  #ylim(0, 30) +
+  ylab("Mean score") +
+  xlab("Time point")
+
+# ggplot(data_processed, aes(timepoint, mean, linetype = fct_rev(condition), group = fct_rev(condition))) +
+#   geom_line() +
+#   geom_point() +
+#   facet_wrap(~ outcome, ncol = 1) +
+#   theme_linedraw() +
+#   #ylim(0, 30) +
+#   ylab("Mean score") +
+#   xlab("Time point")
+
+```
+
+
+```{r}
+
+data_processed |>
+  group_by(timepoint, condition) |>
+  summarize(mean = mean(mean)) |>
+  ggplot(aes(timepoint, mean, linetype = fct_rev(condition), group = fct_rev(interaction(condition)))) +
+  geom_line() +
+  geom_point() +
+  #facet_wrap(~ outcome, ncol = 1) +
+  theme_linedraw() +
+  #ylim(0, 30) +
+  ylab("Mean score") +
+  xlab("Time point")
+
+```
+
+# Comparing conditions at postintervention
+
+Using independent Welch's *t*-tests
+
+## Outcome measures reported in Foody et al. (2015)
+
+Adjusted p values via Bonferroni corrections
+
+```{r fig.height=2, fig.width=5}
+
+es <- data_postintervention |>
+  rename(outcome_measure = outcome) |>
+  pivot_wider(names_from = condition, 
+              values_from = c(mean, sd, n)) |>
+  group_by(outcome_measure) |>
+  do(t_test_from_descriptives(m1 = .$mean_distinction, 
+                              m2 = .$mean_hierarchy,
+                              sd1 = .$sd_distinction,
+                              sd2 = .$sd_hierarchy,
+                              n1 = .$n_distinction,
+                              n2 = .$n_hierarchy,
+                              alpha = 0.05)) |> # bonferroni corrections
+  ungroup() |>
+  mutate(outcome_measure = str_to_sentence(outcome_measure)) |>
+  mutate(p_adjusted = p.adjust(p, method = "bonferroni"),
+         hedges_g_se = (hedges_g_ci_upper - hedges_g_ci_lower)/(1.96*2)) |>
+  mutate(outcome_measure = fct_relevel(outcome_measure, "Stress", "Anxiety", "Discomfort")) |>
+  select(outcome_measure, 
+         m1,
+         sd1,
+         n1, 
+         m2,
+         sd2,
+         n2,
+         hedges_g, 
+         hedges_g_ci_lower, 
+         hedges_g_ci_upper, 
+         hedges_g_se,
+         t, 
+         df, 
+         p, 
+         p_adjusted)
+
+es |>
+  select(outcome_measure,
+         m1,
+         sd1,
+         n1, 
+         m2,
+         sd2,
+         n2,
+         hedges_g, 
+         hedges_g_ci_lower, 
+         hedges_g_ci_upper, 
+         t, 
+         df, 
+         p, 
+         p_adjusted) |>
+  mutate(p = round_p(p),
+         p_adjusted = round_p(p_adjusted)) |>
+  round_all_but_p_values() |>
+  kable() |>
+  kable_classic(full_width = FALSE)
+
+```
+
+### Pairwise comparisons of effect sizes
+
+Calculate Z scores for the difference between each pair of Hedges' *g* effect sizes
+
+```{r}
+
+z_discomfort_anxiety <- 
+  (es$hedges_g[es$outcome_measure == "Discomfort"] - es$hedges_g[es$outcome_measure == "Anxiety"]) /
+  sqrt(es$hedges_g_se[es$outcome_measure == "Discomfort"]^2 + es$hedges_g_se[es$outcome_measure == "Anxiety"]^2)
+
+z_discomfort_stress <- 
+  (es$hedges_g[es$outcome_measure == "Discomfort"] - es$hedges_g[es$outcome_measure == "Stress"]) /
+  sqrt(es$hedges_g_se[es$outcome_measure == "Discomfort"]^2 + es$hedges_g_se[es$outcome_measure == "Stress"]^2)
+
+z_anxiety_stress <- 
+  (es$hedges_g[es$outcome_measure == "Anxiety"] - es$hedges_g[es$outcome_measure == "Stress"]) /
+  sqrt(es$hedges_g_se[es$outcome_measure == "Anxiety"]^2 + es$hedges_g_se[es$outcome_measure == "Stress"]^2)
+
+p_discomfort_anxiety <- (1-pnorm(abs(z_discomfort_anxiety)))*2
+p_discomfort_stress  <- (1-pnorm(abs(z_discomfort_stress)))*2
+p_anxiety_stress     <- (1-pnorm(abs(z_anxiety_stress)))*2
+
+```
+
+Difference between outcome variables:
+
+- Discomfort vs. Anxiety $p$ = `r round_p(p_discomfort_anxiety)`
+- Discomfort vs. Stress $p$ = `r round_p(p_discomfort_stress)`
+- Anxiety vs. Stress $p$ = `r round_p(p_anxiety_stress)`
+
+### Average scores across the three DVs
+
+```{r fig.height=2, fig.width=5.5}
+
+es_pooled <- 
+  bind_rows(
+    es,
+    t_test_from_descriptives(
+      m1 = mean(c(data_postintervention$mean[data_postintervention$outcome == "discomfort" & data_postintervention$condition == "distinction"],
+                data_postintervention$mean[data_postintervention$outcome == "anxiety" & data_postintervention$condition == "distinction"],
+                data_postintervention$mean[data_postintervention$outcome == "stress" & data_postintervention$condition == "distinction"])),
+      m2 = mean(c(data_postintervention$mean[data_postintervention$outcome == "discomfort" & data_postintervention$condition == "hierarchy"],
+                data_postintervention$mean[data_postintervention$outcome == "anxiety" & data_postintervention$condition == "hierarchy"],
+                data_postintervention$mean[data_postintervention$outcome == "stress" & data_postintervention$condition == "hierarchy"])),
+      sd1 = sqrt((data_postintervention$sd[data_postintervention$outcome == "discomfort" & data_postintervention$condition == "distinction"]^2 + 
+                    data_postintervention$sd[data_postintervention$outcome == "anxiety" & data_postintervention$condition == "distinction"]^2 + 
+                    data_postintervention$sd[data_postintervention$outcome == "stress" & data_postintervention$condition == "distinction"]^2)/3),
+      sd2 = sqrt((data_postintervention$sd[data_postintervention$outcome == "discomfort" & data_postintervention$condition == "hierarchy"]^2 + 
+                    data_postintervention$sd[data_postintervention$outcome == "anxiety" & data_postintervention$condition == "hierarchy"]^2 + 
+                    data_postintervention$sd[data_postintervention$outcome == "stress" & data_postintervention$condition == "hierarchy"]^2)/3),
+      n1 = sample_size,
+      n2 = sample_size
+    ) |>
+      mutate(outcome_measure = "Distress (pooled)")
+  ) |>
+  mutate(outcome_measure = fct_relevel(outcome_measure, "Distress (pooled)", "Stress", "Anxiety", "Discomfort")) |>
+  select(outcome_measure,
+         m1,
+         sd1,
+         n1, 
+         m2,
+         sd2,
+         n2,
+         hedges_g, 
+         hedges_g_ci_lower, 
+         hedges_g_ci_upper, 
+         t, 
+         df, 
+         p, 
+         p_adjusted)
+
+```
+
+## Visualising SDs 
+
+```{r fig.height=6, fig.width=6}
+
+data_plot <- data_processed |>
+  pivot_wider(names_from = condition,
+              values_from = c(mean, sd)) |>
+  filter(timepoint == "postintervention") |>
+  mutate(outcome_measure = str_to_sentence(outcome)) |>
+  rename(m1 = mean_distinction,
+         m2 = mean_hierarchy,
+         sd1 = sd_distinction,
+         sd2 = sd_hierarchy)
+
+plot_dists <- function(data, outcome_name){
+  ggplot() +
+    stat_function(fun = dnorm, 
+                  args = list(mean = data |> filter(outcome_measure == outcome_name) |> pull(m1), 
+                              sd = data |> filter(outcome_measure == outcome_name) |> pull(sd1)),
+                  aes(color = "Distinction")) +
+    stat_function(fun = dnorm, 
+                  args = list(mean = data |> filter(outcome_measure == outcome_name) |> pull(m2), 
+                              sd = data |> filter(outcome_measure == outcome_name) |> pull(sd2)),
+                  aes(color = "Hierarchy")) +
+    scale_colour_manual(values = c("black", "grey"),
+                        labels = c("Distinction", "Hierarchy")) +
+    theme_linedraw() +
+    xlim(0,100) +
+    ylab("") +
+    theme(axis.text.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          legend.position = c(0.9, 0.6)) +
+    guides(color = guide_legend(title = "Condition", reverse = TRUE)) +
+    ggtitle(outcome_name)
+}
+
+p_data <- plot_dists(data_plot, "Anxiety") +
+  plot_dists(data_plot, "Discomfort") +
+  plot_dists(data_plot, "Stress") +
+  plot_layout(ncol = 1)
+
+p_data
+
+ggplot2::ggsave(filename = "plots/p_data.png",
+                plot     = p_data,
+                device   = "png",
+                width    = 6,
+                height   = 6,
+                units    = "in")
+
+```
+
+## Combined results
+
+```{r fig.height=4, fig.width=5.5}
+
+data_combined <- 
+  es_pooled |>
+  mutate(color = c("original", "original", "original", "new")) |>
+  select(outcome_measure, 
+         m1,
+         sd1,
+         n1, 
+         m2,
+         sd2,
+         n2,
+         hedges_g,
+         lower = hedges_g_ci_lower,
+         upper = hedges_g_ci_upper,
+         t,
+         df,
+         p,
+         p_adj = p_adjusted,
+         color)
+
+table_1 <- data_combined |>
+  filter(outcome_measure != "Distress (pooled)") |>
+  select(-color) |>
+  mutate(p = round_p(p),
+         p_adj = round_p(p_adj)) |>
+  round_all_but_p_values() 
+
+write_csv(table_1, "tables/table_1.csv")
+
+table_1 |>
+  kable() |>
+  kable_classic(full_width = FALSE) |>
+  add_header_above(c("", "Hierarchy" = 3, "Distinction" = 3, "", "CI" = 2, "", "", "", ""))
+
+table_2 <- data_combined |>
+  filter(outcome_measure == "Distress (pooled)") |>
+  select(-color, -p_adj) |>
+  mutate(p = round_p(p)) |>
+  round_all_but_p_values() 
+
+write_csv(table_2, "tables/table_2.csv")
+
+table_2 |>
+  kable() |>
+  kable_classic(full_width = FALSE) |>
+  add_header_above(c("", "Hierarchy" = 3, "Distinction" = 3, "", "CI" = 2, "", "", ""))
+
+p_combined <- 
+  ggplot(data_combined, aes(outcome_measure, hedges_g, color = color)) +
+  geom_hline(yintercept = 0, linetype = "dotted") +
+  geom_point(shape = "square") +
+  geom_linerange(aes(ymin = lower, ymax = upper)) +
+  # scale_y_continuous(breaks = scales::breaks_width(0.25),
+  #                    limits = c(-0.7, 1.75)) +
+  coord_flip() +
+  scale_color_viridis_d(begin = 0.3, end = 0.7, direction = -1) +
+  theme_linedraw() +
+  xlab("") +
+  ylab("Hedges' g") +
+  theme(legend.position = "none")
+
+p_combined
+
+ggplot2::ggsave(filename = "plots/effect size comparisons.pdf", 
+                plot     = p_combined,
+                device   = "pdf",
+                width    = 5, 
+                height   = 4, 
+                units    = "in")
+
+```
+
+# Comparing conditions at postinduction adjusting for baseline
+
+Using Morris' adjustment (Morris, 2008, doi: 10.1177/1094428106291059)
+
+```{r fig.height=4, fig.width=5.5}
+
+es_baseline <- data_baseline |>
+  rename(outcome_measure = outcome) |>
+  pivot_wider(names_from = condition, 
+              values_from = c(mean, sd, n)) |>
+  group_by(outcome_measure) |>
+  do(t_test_from_descriptives(m1 = .$mean_distinction, 
+                              m2 = .$mean_hierarchy,
+                              sd1 = .$sd_distinction,
+                              sd2 = .$sd_hierarchy,
+                              n1 = .$n_distinction,
+                              n2 = .$n_hierarchy,
+                              alpha = 0.05)) |> # bonferroni corrections
+  ungroup() |>
+  mutate(outcome_measure = str_to_sentence(outcome_measure)) |>
+  mutate(outcome_measure = fct_relevel(outcome_measure, "Stress", "Anxiety", "Discomfort")) |>
+  select(outcome_measure, 
+         hedges_g)
+
+es_pooled_baseline <- 
+  bind_rows(
+    es_baseline,
+    t_test_from_descriptives(
+      m1 = mean(c(data_baseline$mean[data_baseline$outcome == "discomfort" & data_baseline$condition == "distinction"],
+                  data_baseline$mean[data_baseline$outcome == "anxiety" & data_baseline$condition == "distinction"],
+                  data_baseline$mean[data_baseline$outcome == "stress" & data_baseline$condition == "distinction"])),
+      m2 = mean(c(data_baseline$mean[data_baseline$outcome == "discomfort" & data_baseline$condition == "hierarchy"],
+                  data_baseline$mean[data_baseline$outcome == "anxiety" & data_baseline$condition == "hierarchy"],
+                  data_baseline$mean[data_baseline$outcome == "stress" & data_baseline$condition == "hierarchy"])),
+      sd1 = sqrt((data_baseline$sd[data_baseline$outcome == "discomfort" & data_baseline$condition == "distinction"]^2 + 
+                    data_baseline$sd[data_baseline$outcome == "anxiety" & data_baseline$condition == "distinction"]^2 + 
+                    data_baseline$sd[data_baseline$outcome == "stress" & data_baseline$condition == "distinction"]^2)/3),
+      sd2 = sqrt((data_baseline$sd[data_baseline$outcome == "discomfort" & data_baseline$condition == "hierarchy"]^2 + 
+                    data_baseline$sd[data_baseline$outcome == "anxiety" & data_baseline$condition == "hierarchy"]^2 + 
+                    data_baseline$sd[data_baseline$outcome == "stress" & data_baseline$condition == "hierarchy"]^2)/3),
+      n1 = sample_size,
+      n2 = sample_size
+    ) |>
+      mutate(outcome_measure = "Distress (pooled)")
+  ) |>
+  mutate(outcome_measure = fct_relevel(outcome_measure, "Distress (pooled)", "Stress", "Anxiety", "Discomfort")) |>
+  select(outcome_measure,
+         hedges_g)
+
+data_combined_baseline <- 
+  es_pooled_baseline |>
+  mutate(interval = "SEM",
+         interval_text = "Assuming reported intervals were SEMs") |>
+  mutate(color = c("original", "original", "original", "new")) |>
+  select(interval, 
+         outcome_measure, 
+         hedges_g_baseline = hedges_g)
+
+data_combined_all <- 
+  left_join(data_combined,
+            data_combined_baseline, 
+            by = "outcome_measure") |>
+  rename(hedges_g_postintervention = hedges_g) |>
+  mutate(adjusted_hedges_g = hedges_g_postintervention - hedges_g_baseline,
+         adjusted_lower = lower - hedges_g_baseline,
+         adjusted_upper = upper - hedges_g_baseline) |>
+  select(interval, outcome_measure, color, 
+         hedges_g_baseline, hedges_g_postintervention,
+         adjusted_hedges_g, adjusted_lower, adjusted_upper)
+
+table_3 <- data_combined_all |>
+  select(-color) |>
+  mutate_if(is.numeric, round_half_up, digits = 2) 
+
+write_csv(table_3, "tables/table_3.csv")
+
+table_3 |>
+  kable() |>
+  kable_classic(full_width = FALSE)
+#add_header_above(c("", "", "Hierarchy" = 3, "Distinction" = 3, "", "CI" = 2, "", "", "", ""))
+
+
+
+p_combined_adjusted <- ggplot(data_combined_all, aes(outcome_measure, adjusted_hedges_g, color = color)) +
+  geom_hline(yintercept = 0, linetype = "dotted") +
+  geom_point(shape = "square") +
+  geom_linerange(aes(ymin = adjusted_lower, ymax = adjusted_upper)) +
+  scale_y_continuous(breaks = scales::breaks_width(0.5)) +
+  coord_flip() +
+  scale_color_viridis_d(begin = 0.3, end = 0.7, direction = -1) +
+  theme_linedraw() +
+  xlab("") +
+  ylab("Adjusted Hedges' g") +
+  theme(legend.position = "none")
+
+p_combined_adjusted
+
+ggplot2::ggsave(filename = "plots/effect size comparisons morris.pdf", 
+                plot     = p_combined_adjusted,
+                device   = "pdf",
+                width    = 5, 
+                height   = 4, 
+                units    = "in")
+
+```
+
+# Change from baseline to postinduction
+
+```{r}
+
+data_baseline_postinduction <- data_processed |>
+  filter(timepoint %in% c("baseline", "postinduction"))
+
+data_change <- data_baseline_postinduction |>
+  pivot_wider(names_from = c(condition, timepoint), 
+              values_from = c(mean, sd, n)) |>
+  mutate(mean_pooled_baseline = (mean_distinction_baseline + 
+                                   mean_hierarchy_baseline) / 2,
+         mean_pooled_postinduction = (mean_distinction_postinduction + 
+                                        mean_hierarchy_postinduction) / 2,
+         sd_pooled_baseline = sqrt((sd_distinction_baseline^2 + 
+                                      sd_hierarchy_baseline^2)/2),
+         sd_pooled_postinduction = sqrt((sd_distinction_postinduction^2 + 
+                                           sd_hierarchy_postinduction^2)/2),
+         sd_pooled = sqrt((sd_distinction_baseline^2 + 
+                             sd_hierarchy_baseline^2 +
+                             sd_distinction_postinduction^2 + 
+                             sd_hierarchy_postinduction^2)/4)) |>
+  rename(n = n_distinction_baseline) |>
+  mutate(mean_change = mean_pooled_postinduction - mean_pooled_baseline,
+         cohens_d = mean_change/sd_pooled,
+         hedges_g = cohens_d * ( 1 - (3 / ((4*(n + n - 2)) - 1)) )) |>
+  rowwise() |>
+  mutate(lower = psych::cohen.d.ci(hedges_g, n2 = n, n1 = n, alpha = .05)[1],
+         upper = psych::cohen.d.ci(hedges_g, n2 = n, n1 = n, alpha = .05)[3]) |>
+  ungroup() |>
+  select(outcome, 
+         mean_pooled_baseline, mean_pooled_postinduction, mean_change, 
+         sd_pooled_baseline, sd_pooled_postinduction, sd_pooled, n,
+         hedges_g, lower, upper)
+
+```
+
+## Combined 
+
+```{r}
+
+data_change <- 
+  data_change |>
+  mutate(study = "Foody et al. (2015)") |>
+  mutate_if(is.numeric, janitor::round_half_up, digits = 2) |>
+  select(study, outcome, 
+         mean_baseline = mean_pooled_baseline, mean_postinduction = mean_pooled_postinduction,
+         mean_change, 
+         sd_baseline = sd_pooled_baseline, 
+         sd_postinduction = sd_pooled_postinduction, sd_pooled, n,
+         hedges_g, lower, upper)
+
+data_change |>
+  mutate_if(is.numeric, janitor::round_half_up, digits = 2) |>
+  kable() |>
+  kable_classic(full_width = FALSE)
+
+write_csv(data_change, "tables/change baseline to postinduction.csv")
+
+```
+
+# Session info
+
+```{r}
+
+sessionInfo()
+
+```
+
+

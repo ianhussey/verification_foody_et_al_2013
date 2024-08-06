@@ -1,0 +1,278 @@
+---
+title: "Analysis of Foody et al. (2013)"
+author: "Ian Hussey"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    code_folding: hide
+    highlight: haddock
+    theme: flatly
+    toc: yes
+    toc_float: yes
+---
+
+```{r, include=FALSE}
+
+knitr::opts_chunk$set(message = FALSE,
+                      warning = FALSE)
+
+```
+
+# Dependencies and functions
+
+```{r}
+
+# dependencies
+
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+library(janitor)
+library(forcats)
+library(patchwork)
+library(statcheck)
+library(readxl)
+library(scrutiny)
+library(psych)
+
+# create director
+dir.create("plots/")
+dir.create("tables/")
+
+
+# functions
+
+#' Print p values to a given number of digits, always rounding up
+#' @param p: p value to be rounded
+#' @param digits: Number of digits to round to
+round_p <- function(p, digits = 3){
+  ceiling(as.numeric(p)*10^digits)/10^digits
+}
+
+
+#' Calculate an independent t test from summary statistics
+#' @source https://stats.stackexchange.com/q/30450. Improvements made to readability and documentation, added effect sizes.
+#' @param m1: the sample 1 mean
+#' @param m2: the sample 2 mean
+#' @param sd1: the sample 1 SD
+#' @param sd2: the sample 2 SD
+#' @param n1: the sample 2 sample size
+#' @param n2: the sample 2 sample size
+#' @param m0: the null value for the difference in means to be tested for. Default is 0. 
+#' @param equal.variance: whether or not to assume equal variance. Default is FALSE as in the base R t.test function, i.e., a Welch's t-test. Setting to TRUE will produce a Student's t-test.
+t_test_from_descriptives <- function(m1, m2, sd1, sd2, n1, n2, m0 = 0, equal.variance = FALSE, alpha = 0.05) {
+  require(psych)
+  
+  if(equal.variance == FALSE) {
+    se <- sqrt( (sd1^2/n1) + (sd2^2/n2) )
+    # welch-satterthwaite df
+    df <- ( (sd1^2/n1 + sd2^2/n2)^2 )/( (sd1^2/n1)^2/(n1-1) + (sd2^2/n2)^2/(n2-1) )
+  } else {
+    # pooled standard deviation, scaled by the sample sizes
+    se <- sqrt( (1/n1 + 1/n2) * ((n1-1)*sd1^2 + (n2-1)*sd2^2)/(n1+n2-2) ) 
+    df <- n1+n2-2
+  } 
+  
+  t <- (m1 - m2 - m0)/se 
+  d <- (m1 - m2) / sqrt((sd1^2 + sd2^2)/2)
+  d_cis <- psych::cohen.d.ci(d, n2 = n2, n1 = n1, alpha = alpha)
+  
+  g <- d * ( 1 - (3 / ((4*(n1 + n2 - 2)) - 1)) ) # https://stats.stackexchange.com/q/434978 by Wolfgang Vichtbauer, creator of metafor package
+  g_cis <- psych::cohen.d.ci(g, n2 = n2, n1 = n1, alpha = alpha)
+  
+  dat <- data.frame(m1 = m1, 
+                    sd1 = sd1, 
+                    n1 = n1, 
+                    m2 = m2, 
+                    sd2 = sd2, 
+                    n2 = n2,
+                    mean_difference = m1 - m2,
+                    se = se,
+                    cohens_d = d,
+                    cohens_d_ci_lower = d_cis[1],
+                    cohens_d_ci_upper = d_cis[3],
+                    hedges_g = g,
+                    hedges_g_ci_lower = g_cis[1],
+                    hedges_g_ci_upper = g_cis[3],
+                    t = t, 
+                    df = df,
+                    p = 2 * pt(-abs(t), df))
+  
+  return(dat) 
+}
+
+round_all_but_p_values <- function(output, digits = 2){
+  require(dplyr)
+  
+  output |>
+    mutate(p = as.character(p)) |>
+    mutate_if(is.numeric, janitor::round_half_up, digits = 2)
+}
+
+round_half_up_min_decimals <- function(x, digits = 2) {
+  sprintf(paste0("%.", digits, "f"), janitor::round_half_up(x, digits = digits))
+}
+
+```
+
+# Get data
+
+```{r}
+
+data_processed <- read_csv("../../../data/processed/foody et al 2013 publication/data_processed.csv") 
+
+data_postintervention <- data_processed |>
+  filter(timepoint == "postintervention")
+
+```
+
+
+## Assuming intervals in plot are 95% CIs
+
+```{r fig.height=2, fig.width=5}
+
+es_assuming_ci <- data_postintervention |>
+  select(-sd_assuming_sem) |>
+  rename(outcome_measure = outcome) |>
+  pivot_wider(names_from = condition, 
+              values_from = c(mean, sd_assuming_ci, n)) |>
+  group_by(outcome_measure) |>
+  do(t_test_from_descriptives(m1 = .$mean_distinction, 
+                              m2 = .$mean_hierarchy,
+                              sd1 = .$sd_assuming_ci_distinction,
+                              sd2 = .$sd_assuming_ci_hierarchy,
+                              n1 = .$n_distinction,
+                              n2 = .$n_hierarchy,
+                              alpha = 0.05)) |> # bonferroni corrections
+  ungroup() |>
+  mutate(outcome_measure = str_to_sentence(outcome_measure)) |>
+  mutate(p_adjusted = p.adjust(p, method = "bonferroni"),
+         hedges_g_se = (hedges_g_ci_upper - hedges_g_ci_lower)/(1.96*2)) |>
+  mutate(outcome_measure = fct_relevel(outcome_measure, "Stress", "Anxiety", "Discomfort")) |>
+  select(outcome_measure, 
+         m1,
+         sd1,
+         n1, 
+         m2,
+         sd2,
+         n2,
+         hedges_g, 
+         hedges_g_ci_lower, 
+         hedges_g_ci_upper, 
+         hedges_g_se,
+         t, 
+         df, 
+         p, 
+         p_adjusted)
+
+```
+
+## Assuming intervals in plot are SEMs
+
+```{r fig.height=2, fig.width=5}
+
+es_assuming_sem <- data_postintervention |>
+  select(-sd_assuming_ci) |>
+  rename(outcome_measure = outcome) |>
+  pivot_wider(names_from = condition, 
+              values_from = c(mean, sd_assuming_sem, n)) |>
+  group_by(outcome_measure) |>
+  do(t_test_from_descriptives(m1 = .$mean_distinction, 
+                              m2 = .$mean_hierarchy,
+                              sd1 = .$sd_assuming_sem_distinction,
+                              sd2 = .$sd_assuming_sem_hierarchy,
+                              n1 = .$n_distinction,
+                              n2 = .$n_hierarchy,
+                              alpha = 0.05)) |> # bonferroni corrections
+  ungroup() |>
+  mutate(outcome_measure = str_to_sentence(outcome_measure)) |>
+  mutate(p_adjusted = p.adjust(p, method = "bonferroni"),
+         hedges_g_se = (hedges_g_ci_upper - hedges_g_ci_lower)/(1.96*2)) |>
+  mutate(outcome_measure = fct_relevel(outcome_measure, "Stress", "Anxiety", "Discomfort")) |>
+  select(outcome_measure, 
+         m1,
+         sd1,
+         n1, 
+         m2,
+         sd2,
+         n2,
+         hedges_g, 
+         hedges_g_ci_lower, 
+         hedges_g_ci_upper, 
+         hedges_g_se,
+         t, 
+         df, 
+         p, 
+         p_adjusted)
+
+```
+
+
+# Visualising SDs from 95% CIs vs SEMs
+
+```{r fig.height=6, fig.width=6}
+
+plot_dists <- function(data, outcome_name){
+  ggplot() +
+    stat_function(fun = dnorm, 
+                  args = list(mean = data |> filter(outcome_measure == outcome_name) |> pull(m1), 
+                              sd = data |> filter(outcome_measure == outcome_name) |> pull(sd1)),
+                  aes(color = "Distinction")) +
+    stat_function(fun = dnorm, 
+                  args = list(mean = data |> filter(outcome_measure == outcome_name) |> pull(m2), 
+                              sd = data |> filter(outcome_measure == outcome_name) |> pull(sd2)),
+                  aes(color = "Hierarchy")) +
+    scale_colour_manual(values = c("black", "grey"),
+                        labels = c("Distinction", "Hierarchy")) +
+    theme_linedraw() +
+    xlim(0,100) +
+    ylab("") +
+    theme(axis.text.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          legend.position = c(0.9, 0.6)) +
+    guides(color = guide_legend(title = "Condition", reverse = TRUE)) +
+    ggtitle(outcome_name)
+}
+
+p_sem <- 
+  plot_dists(es_assuming_sem, "Anxiety") +
+  plot_dists(es_assuming_sem, "Discomfort") +
+  plot_dists(es_assuming_sem, "Stress") +
+  plot_layout(ncol = 1)
+
+p_sem
+
+p_cis <- 
+  plot_dists(es_assuming_ci, "Anxiety") +
+  plot_dists(es_assuming_ci, "Discomfort") +
+  plot_dists(es_assuming_ci, "Stress") +
+  plot_layout(ncol = 1)
+
+p_cis
+
+ggplot2::ggsave(filename = "plots/p_sem.png",
+                plot     = p_sem,
+                device   = "png",
+                width    = 6,
+                height   = 6,
+                units    = "in")
+
+ggplot2::ggsave(filename = "plots/p_cis.png",
+                plot     = p_cis,
+                device   = "png",
+                width    = 6,
+                height   = 6,
+                units    = "in")
+
+```
+
+
+# Session info
+
+```{r}
+
+sessionInfo()
+
+```
+
+
