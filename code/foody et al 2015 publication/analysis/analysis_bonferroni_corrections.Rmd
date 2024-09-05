@@ -288,27 +288,8 @@ Difference between outcome variables:
 ```{r fig.height=2, fig.width=5.5}
 
 es_pooled <- 
-  bind_rows(
-    es,
-    t_test_from_descriptives(
-      m1 = mean(c(data_postintervention$mean[data_postintervention$outcome == "discomfort" & data_postintervention$condition == "distinction"],
-                data_postintervention$mean[data_postintervention$outcome == "anxiety" & data_postintervention$condition == "distinction"],
-                data_postintervention$mean[data_postintervention$outcome == "stress" & data_postintervention$condition == "distinction"])),
-      m2 = mean(c(data_postintervention$mean[data_postintervention$outcome == "discomfort" & data_postintervention$condition == "hierarchy"],
-                data_postintervention$mean[data_postintervention$outcome == "anxiety" & data_postintervention$condition == "hierarchy"],
-                data_postintervention$mean[data_postintervention$outcome == "stress" & data_postintervention$condition == "hierarchy"])),
-      sd1 = sqrt((data_postintervention$sd[data_postintervention$outcome == "discomfort" & data_postintervention$condition == "distinction"]^2 + 
-                    data_postintervention$sd[data_postintervention$outcome == "anxiety" & data_postintervention$condition == "distinction"]^2 + 
-                    data_postintervention$sd[data_postintervention$outcome == "stress" & data_postintervention$condition == "distinction"]^2)/3),
-      sd2 = sqrt((data_postintervention$sd[data_postintervention$outcome == "discomfort" & data_postintervention$condition == "hierarchy"]^2 + 
-                    data_postintervention$sd[data_postintervention$outcome == "anxiety" & data_postintervention$condition == "hierarchy"]^2 + 
-                    data_postintervention$sd[data_postintervention$outcome == "stress" & data_postintervention$condition == "hierarchy"]^2)/3),
-      n1 = sample_size,
-      n2 = sample_size
-    ) |>
-      mutate(outcome_measure = "Distress (pooled)")
-  ) |>
-  mutate(outcome_measure = fct_relevel(outcome_measure, "Distress (pooled)", "Stress", "Anxiety", "Discomfort")) |>
+  es |>
+  mutate(outcome_measure = fct_relevel(outcome_measure, "Stress", "Anxiety", "Discomfort")) |>
   select(outcome_measure,
          m1,
          sd1,
@@ -332,7 +313,7 @@ es_pooled <-
 
 data_combined <- 
   es_pooled |>
-  mutate(color = c("original", "original", "original", "new")) |>
+  mutate(color = c("original", "original", "original")) |>
   select(outcome_measure, 
          m1,
          sd1,
@@ -350,7 +331,6 @@ data_combined <-
          color)
 
 table_1 <- data_combined |>
-  filter(outcome_measure != "Distress (pooled)") |>
   select(-color) |>
   mutate(p = round_p(p),
          p_adj = round_p(p_adj)) |>
@@ -364,7 +344,6 @@ table_1 |>
   add_header_above(c("", "Hierarchy" = 3, "Distinction" = 3, "", "CI" = 2, "", "", "", ""))
 
 table_2 <- data_combined |>
-  filter(outcome_measure == "Distress (pooled)") |>
   select(-color, -p_adj) |>
   mutate(p = round_p(p)) |>
   round_all_but_p_values() 
@@ -426,33 +405,14 @@ es_baseline <- data_baseline |>
          hedges_g)
 
 es_pooled_baseline <- 
-  bind_rows(
-    es_baseline,
-    t_test_from_descriptives(
-      m1 = mean(c(data_baseline$mean[data_baseline$outcome == "discomfort" & data_baseline$condition == "distinction"],
-                  data_baseline$mean[data_baseline$outcome == "anxiety" & data_baseline$condition == "distinction"],
-                  data_baseline$mean[data_baseline$outcome == "stress" & data_baseline$condition == "distinction"])),
-      m2 = mean(c(data_baseline$mean[data_baseline$outcome == "discomfort" & data_baseline$condition == "hierarchy"],
-                  data_baseline$mean[data_baseline$outcome == "anxiety" & data_baseline$condition == "hierarchy"],
-                  data_baseline$mean[data_baseline$outcome == "stress" & data_baseline$condition == "hierarchy"])),
-      sd1 = sqrt((data_baseline$sd[data_baseline$outcome == "discomfort" & data_baseline$condition == "distinction"]^2 + 
-                    data_baseline$sd[data_baseline$outcome == "anxiety" & data_baseline$condition == "distinction"]^2 + 
-                    data_baseline$sd[data_baseline$outcome == "stress" & data_baseline$condition == "distinction"]^2)/3),
-      sd2 = sqrt((data_baseline$sd[data_baseline$outcome == "discomfort" & data_baseline$condition == "hierarchy"]^2 + 
-                    data_baseline$sd[data_baseline$outcome == "anxiety" & data_baseline$condition == "hierarchy"]^2 + 
-                    data_baseline$sd[data_baseline$outcome == "stress" & data_baseline$condition == "hierarchy"]^2)/3),
-      n1 = sample_size,
-      n2 = sample_size
-    ) |>
-      mutate(outcome_measure = "Distress (pooled)")
-  ) |>
-  mutate(outcome_measure = fct_relevel(outcome_measure, "Distress (pooled)", "Stress", "Anxiety", "Discomfort")) |>
+  es_baseline |>
+  mutate(outcome_measure = fct_relevel(outcome_measure, "Stress", "Anxiety", "Discomfort")) |>
   select(outcome_measure,
          hedges_g)
 
 data_combined_baseline <- 
   es_pooled_baseline |>
-  mutate(color = c("original", "original", "original", "new")) |>
+  mutate(color = c("original", "original", "original")) |>
   select(outcome_measure, 
          hedges_g_baseline = hedges_g)
 
