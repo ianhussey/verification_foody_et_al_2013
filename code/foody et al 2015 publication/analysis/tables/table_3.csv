@@ -1,5 +1,5 @@
-interval,outcome_measure,hedges_g_baseline,hedges_g_postintervention,adjusted_hedges_g,adjusted_lower,adjusted_upper
-SEM,Anxiety,0.15,0.25,0.11,-0.7,0.91
-SEM,Discomfort,0.32,0.44,0.12,-0.69,0.93
-SEM,Stress,-0.01,0.18,0.19,-0.62,0.99
-SEM,Distress (pooled),0.17,0.3,0.13,-0.68,0.93
+outcome_measure,hedges_g_baseline,hedges_g_postintervention,adjusted_hedges_g,adjusted_lower,adjusted_upper
+Anxiety,0.28,0.06,-0.22,-0.88,0.43
+Discomfort,0.29,0.49,0.21,-0.46,0.87
+Stress,-0.11,0.49,0.6,-0.07,1.26
+Distress (pooled),0.14,0.31,0.17,-0.49,0.83

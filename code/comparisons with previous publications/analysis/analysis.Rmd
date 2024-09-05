@@ -126,9 +126,6 @@ Anxiety VAS ratings taken from previous publications using the single sentence d
 
 - Rachman et al. (1996): Data included below.
 - Van den Hout et al (2002): Data included below.
-- Zucker et al. (2002): Did include a control condition but not include a post delay timepoint. Available data included below.
-- Bocci & Gordon (2007): Did not include a strictly no instructions condition. Participants were instructed they could do anything they like, including to the paper (i.e., what Rachman et al. would call neutralisation). Data included below, but this condition is not precisely the same as those 
-- Marcks & Woods (2007): Included a no instructions "monitor only" condition but report that they dropped it from their analysis, only reporting scores at one timepoint. No data included below.
 
 ```{r}
 
@@ -155,39 +152,32 @@ dat_vandenhout <-
          study = "van den Hout et al. (2002)", 
          included_no_instructions_condition = TRUE)
 
-dat_zucker <- 
-  tibble(timepoint = c("Baseline", "Postinduction", "Postdelay"), 
-         m = c(34.28, 61.28, NA),
-         sd = c(27.99, 18.18, NA),
-         n = c(36, 36, NA),
-         se = sd / sqrt(n)) |>
-  mutate(timepoint = fct_relevel(timepoint, c("Baseline", "Postinduction", "Postdelay")),
-         study = "Zucker et al. (2002)", 
-         included_no_instructions_condition = FALSE)
-
-dat_bocci <- 
-  tibble(timepoint = c("Baseline", "Postinduction", "Postdelay"), 
-         m = c(24.06, 59.71, 43.61),
-         sd = c(20.43, 20.68, 17.81),
-         n = c(49, 49, 49),
-         se = sd / sqrt(n)) |>
-  mutate(timepoint = fct_relevel(timepoint, c("Baseline", "Postinduction", "Postdelay")),
-         study = "Bocci & Gordon (2007)", 
-         included_no_instructions_condition = FALSE)
-
 dat <- 
   bind_rows(dat_rachman, 
-            dat_vandenhout,
-            dat_zucker,
-            dat_bocci) |>
-  mutate(study = fct_relevel(study, "Rachman et al. (1996)", "van den Hout et al. (2002)", "Zucker et al. (2002)", "Bocci & Gordon (2007)"))
+            dat_vandenhout) |>
+  mutate(study = fct_relevel(study, "Rachman et al. (1996)", "van den Hout et al. (2002)"))
 
-```
 
-```{r}
-
-data_foodyetal2013 <- read_csv("../../foody et al 2013 publication/analysis/tables/change baseline to postinduction.csv")
-data_foodythesisexp10 <- read_csv("../../foody 2013 thesis experiment 10/analysis/tables/change baseline to postinduction.csv")
+dat_foody2013 <- 
+  #read_csv("../../../data/processed/foody et al 2013 publication/data_processed.csv") |>
+  read_csv("../../../data/extracted/foody et al 2013 publication/data_extracted_all.csv") |>
+  rename(n = n_reported_in_text,
+         mean = mean_reported_in_plot) |>
+  filter(outcome == "anxiety") |>
+  mutate(study = "Foody et al. (2013)") |>
+  mutate(study = paste(study, condition),
+         included_no_instructions_condition = TRUE,
+         #se = sd_assuming_sem/sqrt(n),
+         timepoint = str_to_sentence(timepoint)) |>
+  select(study,
+         timepoint, 
+         m = mean, 
+         #sd = sd_assuming_sem,
+         #se,
+         interval_lower, 
+         interval_upper,
+         n,
+         included_no_instructions_condition)
 
 ```
 
@@ -199,7 +189,7 @@ Compare studies with pure negative controls, all three timepoints (baseline, pos
 
 Intervals are 95% CIs calculated from the SEs, which were calculated from the N and SDs.
 
-```{r fig.height=4, fig.width=5}
+```{r fig.height=4, fig.width=10}
 
 dat_negative_controls <- dat |>
   filter(included_no_instructions_condition == TRUE) |>
@@ -211,7 +201,7 @@ p3 <-
             position = position_dodge(width = 0.2)) +
   geom_linerange(aes(ymin = m - se*1.96, ymax = m + se*1.96), position = position_dodge(width = 0.2)) +
   geom_point(position = position_dodge(width = 0.2)) +
-  scale_color_viridis_d(option = "mako", begin = 0.3, end = 0.7,
+  scale_color_viridis_d(option = "mako", begin = 0.2, end = 0.8,
                         name = "Study") +
   ylim(0,100) +
   theme_linedraw() +
@@ -221,164 +211,33 @@ p3 <-
         legend.background = element_rect(fill='transparent'),
         legend.box.background = element_rect(fill='white'))
 
-p3
-
-ggplot2::ggsave(filename = "plots/negative controls.pdf", 
-                plot     = p3,
-                device   = "pdf",
-                width    = 5, 
-                height   = 4, 
-                units    = "in")
-
-```
-
-## Table means
-
-```{r}
-
-dat_negative_controls |>
-  kable() |>
-  kable_classic(full_width = FALSE)
-
-```
-
-## Table effect sizes
-
-Positive values represent less anxiety.
-
-```{r}
-
-data_es_negative_controls <-
-  bind_rows(
-    dat_negative_controls |>
-      pivot_wider(names_from = timepoint,
-                  values_from = c(m, sd, n, se)) |>
-      group_by(study) |>
-      do(t_test_from_descriptives(m1 = .$m_Baseline, 
-                                  m2 = .$m_Postinduction, 
-                                  sd1 = .$sd_Baseline, 
-                                  sd2 = .$sd_Postinduction, 
-                                  n1 = .$n_Baseline, 
-                                  n2 = .$n_Postinduction)) |>
-      mutate(comparison = "Baseline vs postinduction"),
-    
-    dat_negative_controls |>
-      pivot_wider(names_from = timepoint,
-                  values_from = c(m, sd, n, se)) |>
-      group_by(study) |>
-      do(t_test_from_descriptives(m1 = .$m_Postinduction, 
-                                  m2 = .$m_Postdelay, 
-                                  sd1 = .$sd_Postinduction, 
-                                  sd2 = .$sd_Postdelay, 
-                                  n1 = .$n_Postinduction, 
-                                  n2 = .$n_Postdelay)) |>
-      mutate(comparison = "Postinduction vs postdelay"),
-    
-    dat_negative_controls |>
-      pivot_wider(names_from = timepoint,
-                  values_from = c(m, sd, n, se)) |>
-      group_by(study) |>
-      do(t_test_from_descriptives(m1 = .$m_Baseline, 
-                                  m2 = .$m_Postdelay, 
-                                  sd1 = .$sd_Baseline, 
-                                  sd2 = .$sd_Postdelay, 
-                                  n1 = .$n_Baseline, 
-                                  n2 = .$n_Postdelay)) |>
-      mutate(comparison = "Baseline vs postdelay") 
-  ) |>
-  select(study, comparison, hedges_g, lower = hedges_g_ci_lower, upper = hedges_g_ci_upper, 
-         t, df, p) |>
-  mutate(p = apa_p_value(p, digits = 5)) |>
-  arrange(study) |>
-  round_all_but_p_values()
-
-data_es_negative_controls |>
-  kable() |>
-  kable_classic(full_width = FALSE)
-
-write_csv(data_es_negative_controls, "tables/effect sizes negative controls.csv")
-
-```
-
-# Compare SDs 
-
-between Foody's work and previously published studies
-
-```{r fig.height=5, fig.width=5}
-
-data_sd <- 
-  bind_rows(
-    dat |>
-      select(study, timepoint, sd) |>
-      pivot_wider(names_from = timepoint, 
-                  values_from = sd) |>
-      select(study, 
-             sd_baseline = Baseline,
-             sd_postinduction = Postinduction) |>
-      mutate(outcome = "anxiety"),
-    data_foodyetal2013,
-    data_foodythesisexp10 |>
-      mutate(study = "Foody (2013) unpublished replication")
-  ) |>
-  select(study, 
-         outcome, 
-         interval,
-         sd_baseline,
-         sd_postinduction) |>
-  mutate(interval = ifelse(is.na(interval), "Known SD", interval),
-         study = fct_relevel(study, 
-                             "Rachman et al. (1996)", 
-                             "van den Hout et al. (2002)", 
-                             "Zucker et al. (2002)", 
-                             "Bocci & Gordon (2007)",
-                             "Foody et al. (2013)",
-                             "Foody (2013) unpublished replication")) |>
-  filter(outcome == "anxiety") |>
-  rename(Baseline = sd_baseline, 
-         Postinduction = sd_postinduction) |>
-  pivot_longer(cols = c(Baseline, Postinduction),
-               names_to = "timepoint", 
-               values_to = "sd") |>
-  mutate(interval = fct_relevel(interval, "Assuming intervals are SEMs", "Assuming intervals are 95% CIs", "Known SD")) |>
-  group_by(timepoint) |>
-  mutate(mean_sd = mean(sd[interval == "Known SD"])) |>
-  ungroup()
-
-plot_sd <- 
-  ggplot(data_sd, aes(sd, study, color = interval, shape = interval)) +
-  geom_vline(aes(xintercept = mean_sd), linetype = "dotted") +
-  geom_point(position = position_dodge(width = 0.5)) +
+p4 <- 
+  ggplot(dat_foody2013, aes(timepoint, m, color = study, group = study)) +
+  geom_line(alpha = 0.5,
+            position = position_dodge(width = 0.2)) +
   #geom_linerange(aes(ymin = m - se*1.96, ymax = m + se*1.96), position = position_dodge(width = 0.2)) +
-  facet_wrap(~ timepoint, ncol = 1) +
-  #xlim(0,100) +
-  scale_color_manual(breaks = c("Assuming intervals are 95% CIs", "Assuming intervals are SEMs", "Known SD"),
-                     values = c("#2A788EFF", "#22A884FF", "darkgrey"),
-                     name = NULL) +
-  scale_shape_manual(breaks = c("Assuming intervals are 95% CIs", "Assuming intervals are SEMs", "Known SD"),
-                     values = c("circle", "square", "triangle"),
-                     name = NULL) +
-  #guide = guide_legend(reverse = TRUE)) +
+  geom_linerange(aes(ymin = interval_lower, ymax = interval_upper), 
+                 position = position_dodge(width = 0.2)) +
+  geom_point(position = position_dodge(width = 0.2)) +
+  scale_color_viridis_d(option = "mako", begin = 0.2, end = 0.8,
+                        name = "Study condition") +
+  ylim(0,100) +
   theme_linedraw() +
-  ylab("") +
-  xlab("Standard deviation") +
-  # theme(legend.position = c(.75, .13),
-  #       legend.background = element_rect(fill='transparent'),
-  #       legend.box.background = element_rect(fill='white'),
-  #       legend.text = element_text(size = 8))
-  theme(legend.position = "bottom",
-        #legend.background = element_rect(fill='transparent'),
-        #legend.box.background = element_rect(fill='white'),
-        legend.text = element_text(size = 8)) +
-  guides(color = guide_legend(ncol = 1),
-         shape = guide_legend(ncol = 1))
+  ylab("Anxiety VAS") +
+  xlab("Time point") +
+  theme(legend.position = c(.75, .85),
+        legend.background = element_rect(fill='transparent'),
+        legend.box.background = element_rect(fill='white'))
 
-plot_sd
+library(patchwork)
+p_combined <- p3 + p4
+p_combined
 
-ggplot2::ggsave(filename = "plots/standard deviations between studies.pdf", 
-                plot     = plot_sd,
+ggplot2::ggsave(filename = "plots/recreated compared to negative controls.pdf", 
+                plot     = p_combined,
                 device   = "pdf",
-                width    = 6, 
-                height   = 5, 
+                width    = 10, 
+                height   = 4, 
                 units    = "in")
 
 ```

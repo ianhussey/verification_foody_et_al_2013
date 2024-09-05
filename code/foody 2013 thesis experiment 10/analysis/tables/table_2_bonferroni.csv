@@ -1,3 +1,0 @@
-interval,outcome_measure,m1,sd1,n1,m2,sd2,n2,hedges_g,lower,upper,t,df,p
-95% CI,Distress (pooled),20.94,11.65,12,14.61,8.88,12,0.59,-0.23,1.4,1.5,20.56,0.15
-SEM,Distress (pooled),20.94,22.83,12,14.61,17.41,12,0.3,-0.51,1.1,0.76,20.56,0.454
