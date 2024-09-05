@@ -2,6 +2,14 @@
 
 
 
+## Original article
+
+Foody, M., Barnes-Holmes, Y., Barnes-Holmes, D., & Luciano, C. (2013). An Empirical Investigation of Hierarchical versus Distinction Relations in a Self-based ACT Exercise. *International Journal of Psychology*. https://www.ijpsy.com/volumen13/num3/368/an-empirical-investiga-tion-of-hierarchical-EN.pdf
+
+- note that this journal does not issue DOIs
+
+
+
 ## Instructions to reproduce analyses
 
 Knit the following .Rmd files in RStudio in the following order. Kniting the files will produce .html reports of the results as well as saving .pdf figures and .csv tables to disk.
