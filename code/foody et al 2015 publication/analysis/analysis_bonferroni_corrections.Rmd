@@ -197,6 +197,9 @@ Adjusted p values via Bonferroni corrections
 
 ```{r fig.height=2, fig.width=5}
 
+n_tests <- 3
+adjusted_alpha <- 0.05 / n_tests
+
 es <- data_postintervention |>
   rename(outcome_measure = outcome) |>
   pivot_wider(names_from = condition, 
@@ -212,7 +215,10 @@ es <- data_postintervention |>
   ungroup() |>
   mutate(outcome_measure = str_to_sentence(outcome_measure)) |>
   mutate(p_adjusted = p.adjust(p, method = "bonferroni"),
-         hedges_g_se = (hedges_g_ci_upper - hedges_g_ci_lower)/(1.96*2)) |>
+         # original: hedges_g_se = (hedges_g_ci_upper - hedges_g_ci_lower)/(1.96*2)
+         # qnorm(1 - (0.0167 / 2)) returns approx 2.39, not 1.96
+         z_critical = qnorm(1 - (adjusted_alpha / 2)),
+         hedges_g_se = (hedges_g_ci_upper - hedges_g_ci_lower) / (z_critical * 2)) |>
   mutate(outcome_measure = fct_relevel(outcome_measure, "Stress", "Anxiety", "Discomfort")) |>
   select(outcome_measure, 
          m1,
@@ -252,6 +258,8 @@ es |>
   kable_classic(full_width = FALSE)
 
 ```
+
+NOTE THAT CIS ARE 98.33% CIS NOT 95% CISs, as they have bonferroni corrections applied
 
 ### Pairwise comparisons of effect sizes
 

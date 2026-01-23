@@ -138,13 +138,13 @@ length(sample_size) == 1
 
 # Corrected *p* values for RM-ANOVAs
 
-*p* values extracted from text and corrected via Bonferroni corrections
+*p* values extracted from text and corrected via Holm corrections
 
-Foody et al. (2013) reported *p* values for their RM-ANOVAs' interaction effects of .45, .33, .04. Using Bonferroni corrections for multiple testing these would be:
+Foody et al. (2013) reported *p* values for their RM-ANOVAs' interaction effects of .45, .33, .04. Using Holm corrections for multiple testing these would be:
 
 ```{r}
 
-p.adjust(c(.45, .33, .04), method = "bonferroni") |>
+p.adjust(c(.45, .33, .04), method = "holm") |>
   round_p()
 
 ```
@@ -187,10 +187,10 @@ es_assuming_sem <- data_postintervention |>
                               sd2 = .$sd_assuming_sem_hierarchy,
                               n1 = .$n_distinction,
                               n2 = .$n_hierarchy,
-                              alpha = 0.05)) |> # bonferroni corrections
+                              alpha = 0.05)) |> 
   ungroup() |>
   mutate(outcome_measure = str_to_sentence(outcome_measure)) |>
-  mutate(p_adjusted = p.adjust(p, method = "bonferroni"),
+  mutate(p_holm_adjusted = p.adjust(p, method = "holm"),
          hedges_g_se = (hedges_g_ci_upper - hedges_g_ci_lower)/(1.96*2)) |>
   mutate(outcome_measure = fct_relevel(outcome_measure, "Stress", "Anxiety", "Discomfort")) |>
   select(outcome_measure, 
@@ -207,7 +207,7 @@ es_assuming_sem <- data_postintervention |>
          t, 
          df, 
          p, 
-         p_adjusted)
+         p_holm_adjusted)
 
 es_assuming_sem |>
   select(outcome_measure,
@@ -223,9 +223,9 @@ es_assuming_sem |>
          t, 
          df, 
          p, 
-         p_adjusted) |>
+         p_holm_adjusted) |>
   mutate(p = round_p(p),
-         p_adjusted = round_p(p_adjusted)) |>
+         p_holm_adjusted = round_p(p_holm_adjusted)) |>
   round_all_but_p_values() |>
   kable() |>
   kable_classic(full_width = FALSE)
@@ -301,7 +301,7 @@ es_assuming_sem_pooled <-
          t, 
          df, 
          p, 
-         p_adjusted)
+         p_holm_adjusted)
 
 ```
 
@@ -325,14 +325,14 @@ data_combined <-
          t,
          df,
          p,
-         p_adj = p_adjusted,
+         p_holm_adj = p_holm_adjusted,
          color)
 
 table_1 <- data_combined |>
   filter(outcome_measure != "Distress (pooled)") |>
   select(-color) |>
   mutate(p = round_p(p),
-         p_adj = round_p(p_adj)) |>
+         p_holm_adj = round_p(p_holm_adj)) |>
   round_all_but_p_values() 
 
 write_csv(table_1, "tables/table_1.csv")
@@ -344,7 +344,7 @@ table_1 |>
 
 table_2 <- data_combined |>
   filter(outcome_measure == "Distress (pooled)") |>
-  select(-color, -p_adj) |>
+  select(-color, -p_holm_adj) |>
   mutate(p = round_p(p)) |>
   round_all_but_p_values() 
 
