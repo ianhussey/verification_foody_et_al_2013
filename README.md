@@ -10,6 +10,12 @@ Foody, M., Barnes-Holmes, Y., Barnes-Holmes, D., & Luciano, C. (2013). An Empiri
 
 
 
+## Linked OSF project
+
+https://osf.io/ztd8n
+
+
+
 ## Instructions to reproduce analyses
 
 Knit the following .Rmd files in RStudio in the following order. Kniting the files will produce .html reports of the results as well as saving .pdf figures and .csv tables to disk.
