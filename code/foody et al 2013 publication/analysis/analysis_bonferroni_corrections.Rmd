@@ -241,26 +241,34 @@ Difference between outcome variables:
 - Discomfort vs. Stress $p$ = `r round_p(p_discomfort_stress)`
 - Anxiety vs. Stress $p$ = `r round_p(p_anxiety_stress)`
 
-## Average scores across the three DVs
+## Outcome measures (Bonferroni-corrected)
+
+Note: the pooled "Distress" composite is deliberately excluded from the
+Bonferroni-corrected analysis. Bonferroni correction adjusts for the number of
+tests in a family; the pooled score is a single test (dividing alpha by 1 leaves
+it unchanged), so correcting it is not meaningful. Pooling the three DVs and
+Bonferroni-correcting the three DVs are alternative ways of handling the same
+multiplicity. The pooled effect size and its (uncorrected) 95% CI are reported
+in the no-corrections analysis.
 
 ```{r fig.height=2, fig.width=5.5}
 
-es_assuming_sem_pooled <- 
+es_assuming_sem_pooled <-
   es_assuming_sem |>
   mutate(outcome_measure = fct_relevel(outcome_measure, "Stress", "Anxiety", "Discomfort")) |>
   select(outcome_measure,
          m1,
          sd1,
-         n1, 
+         n1,
          m2,
          sd2,
          n2,
-         hedges_g, 
-         hedges_g_ci_lower, 
-         hedges_g_ci_upper, 
-         t, 
-         df, 
-         p, 
+         hedges_g,
+         hedges_g_ci_lower,
+         hedges_g_ci_upper,
+         t,
+         df,
+         p,
          p_adjusted)
 
 ```
@@ -269,13 +277,13 @@ es_assuming_sem_pooled <-
 
 ```{r fig.height=4, fig.width=5.5}
 
-data_combined <- 
+data_combined <-
   es_assuming_sem_pooled |>
   mutate(color = c("original", "original", "original")) |>
-  select(outcome_measure, 
+  select(outcome_measure,
          m1,
          sd1,
-         n1, 
+         n1,
          m2,
          sd2,
          n2,
@@ -292,7 +300,7 @@ table_1 <- data_combined |>
   select(-color) |>
   mutate(p = round_p(p),
          p_adj = round_p(p_adj)) |>
-  round_all_but_p_values() 
+  round_all_but_p_values()
 
 write_csv(table_1, "tables/table_1_bonferroni.csv")
 
@@ -301,19 +309,7 @@ table_1 |>
   kable_classic(full_width = FALSE) |>
   add_header_above(c("", "Hierarchy" = 3, "Distinction" = 3, "", "CI" = 2, "", "", "", ""))
 
-table_2 <- data_combined |>
-  select(-color, -p_adj) |>
-  mutate(p = round_p(p)) |>
-  round_all_but_p_values() 
-
-write_csv(table_2, "tables/table_2_bonferroni.csv")
-
-table_2 |>
-  kable() |>
-  kable_classic(full_width = FALSE) |>
-  add_header_above(c("", "Hierarchy" = 3, "Distinction" = 3, "", "CI" = 2, "", "", ""))
-
-p_combined <- 
+p_combined <-
   ggplot(data_combined, aes(outcome_measure, hedges_g, color = color)) +
   geom_hline(yintercept = 0, linetype = "dotted") +
   geom_point(shape = "square") +
@@ -385,16 +381,16 @@ es_assuming_sem_baseline <- data_baseline |>
   select(outcome_measure, 
          hedges_g)
 
-es_assuming_sem_pooled_baseline <- 
+es_assuming_sem_pooled_baseline <-
   es_assuming_sem_baseline |>
   mutate(outcome_measure = fct_relevel(outcome_measure, "Stress", "Anxiety", "Discomfort")) |>
   select(outcome_measure,
          hedges_g)
 
-data_combined_baseline <- 
+data_combined_baseline <-
   es_assuming_sem_pooled_baseline |>
   mutate(color = c("original", "original", "original")) |>
-  select(outcome_measure, 
+  select(outcome_measure,
          hedges_g_baseline = hedges_g)
 
 data_combined_all <- 

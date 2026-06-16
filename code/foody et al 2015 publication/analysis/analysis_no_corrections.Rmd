@@ -1,5 +1,5 @@
 ---
-title: "Analysis of Foody et al. (2013)"
+title: "Analysis of Foody et al. (2015)"
 author: "Ian Hussey"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
@@ -119,7 +119,7 @@ round_half_up_min_decimals <- function(x, digits = 2) {
 
 ```{r}
 
-data_processed <- read_csv("../../../data/processed/foody et al 2013 publication/data_processed.csv") 
+data_processed <- read_csv("../../../data/processed/foody et al 2015 publication/data_processed.csv") 
 
 data_postintervention <- data_processed |>
   filter(timepoint == "postintervention")
@@ -164,7 +164,7 @@ ggplot(data_processed, aes(timepoint, mean, group = condition, color = condition
   facet_wrap(~ outcome, ncol = 1) +
   scale_color_viridis_d(begin = 0.3, end = 0.7) +
   theme_linedraw() +
-  ylim(0, 30) +
+  ylim(0, 50) +
   ylab("Mean score") +
   xlab("Time point")
 
@@ -174,22 +174,21 @@ ggplot(data_processed, aes(timepoint, mean, group = condition, color = condition
 
 Using independent Welch's *t*-tests
 
-## Outcome measures reported in Foody et al. (2013)
+## Outcome measures reported in Foody et al. (2015)
 
 Adjusted p values via Bonferroni corrections
 
 ```{r fig.height=2, fig.width=5}
 
-es_assuming_sem <- data_postintervention |>
-  select(-sd_assuming_ci) |>
+es <- data_postintervention |>
   rename(outcome_measure = outcome) |>
-  pivot_wider(names_from = condition, 
-              values_from = c(mean, sd_assuming_sem, n)) |>
+  pivot_wider(names_from = condition,
+              values_from = c(mean, sd, n)) |>
   group_by(outcome_measure) |>
-  do(t_test_from_descriptives(m1 = .$mean_distinction, 
+  do(t_test_from_descriptives(m1 = .$mean_distinction,
                               m2 = .$mean_hierarchy,
-                              sd1 = .$sd_assuming_sem_distinction,
-                              sd2 = .$sd_assuming_sem_hierarchy,
+                              sd1 = .$sd_distinction,
+                              sd2 = .$sd_hierarchy,
                               n1 = .$n_distinction,
                               n2 = .$n_hierarchy,
                               alpha = 0.05)) |> # bonferroni corrections
@@ -214,7 +213,7 @@ es_assuming_sem <- data_postintervention |>
          p, 
          p_adjusted)
 
-es_assuming_sem |>
+es |>
   select(outcome_measure,
          m1,
          sd1,
@@ -244,16 +243,16 @@ Calculate Z scores for the difference between each pair of Hedges' *g* effect si
 ```{r}
 
 z_discomfort_anxiety <- 
-  (es_assuming_sem$hedges_g[es_assuming_sem$outcome_measure == "Discomfort"] - es_assuming_sem$hedges_g[es_assuming_sem$outcome_measure == "Anxiety"]) /
-  sqrt(es_assuming_sem$hedges_g_se[es_assuming_sem$outcome_measure == "Discomfort"]^2 + es_assuming_sem$hedges_g_se[es_assuming_sem$outcome_measure == "Anxiety"]^2)
+  (es$hedges_g[es$outcome_measure == "Discomfort"] - es$hedges_g[es$outcome_measure == "Anxiety"]) /
+  sqrt(es$hedges_g_se[es$outcome_measure == "Discomfort"]^2 + es$hedges_g_se[es$outcome_measure == "Anxiety"]^2)
 
 z_discomfort_stress <- 
-  (es_assuming_sem$hedges_g[es_assuming_sem$outcome_measure == "Discomfort"] - es_assuming_sem$hedges_g[es_assuming_sem$outcome_measure == "Stress"]) /
-  sqrt(es_assuming_sem$hedges_g_se[es_assuming_sem$outcome_measure == "Discomfort"]^2 + es_assuming_sem$hedges_g_se[es_assuming_sem$outcome_measure == "Stress"]^2)
+  (es$hedges_g[es$outcome_measure == "Discomfort"] - es$hedges_g[es$outcome_measure == "Stress"]) /
+  sqrt(es$hedges_g_se[es$outcome_measure == "Discomfort"]^2 + es$hedges_g_se[es$outcome_measure == "Stress"]^2)
 
 z_anxiety_stress <- 
-  (es_assuming_sem$hedges_g[es_assuming_sem$outcome_measure == "Anxiety"] - es_assuming_sem$hedges_g[es_assuming_sem$outcome_measure == "Stress"]) /
-  sqrt(es_assuming_sem$hedges_g_se[es_assuming_sem$outcome_measure == "Anxiety"]^2 + es_assuming_sem$hedges_g_se[es_assuming_sem$outcome_measure == "Stress"]^2)
+  (es$hedges_g[es$outcome_measure == "Anxiety"] - es$hedges_g[es$outcome_measure == "Stress"]) /
+  sqrt(es$hedges_g_se[es$outcome_measure == "Anxiety"]^2 + es$hedges_g_se[es$outcome_measure == "Stress"]^2)
 
 p_discomfort_anxiety <- (1-pnorm(abs(z_discomfort_anxiety)))*2
 p_discomfort_stress  <- (1-pnorm(abs(z_discomfort_stress)))*2
@@ -271,9 +270,9 @@ Difference between outcome variables:
 
 ```{r fig.height=2, fig.width=5.5}
 
-es_assuming_sem_pooled <- 
+es_pooled <- 
   bind_rows(
-    es_assuming_sem,
+    es,
     t_test_from_descriptives(
       m1 = mean(c(data_postintervention$mean[data_postintervention$outcome == "discomfort" & data_postintervention$condition == "distinction"],
                   data_postintervention$mean[data_postintervention$outcome == "anxiety" & data_postintervention$condition == "distinction"],
@@ -281,12 +280,12 @@ es_assuming_sem_pooled <-
       m2 = mean(c(data_postintervention$mean[data_postintervention$outcome == "discomfort" & data_postintervention$condition == "hierarchy"],
                   data_postintervention$mean[data_postintervention$outcome == "anxiety" & data_postintervention$condition == "hierarchy"],
                   data_postintervention$mean[data_postintervention$outcome == "stress" & data_postintervention$condition == "hierarchy"])),
-      sd1 = sqrt((data_postintervention$sd_assuming_sem[data_postintervention$outcome == "discomfort" & data_postintervention$condition == "distinction"]^2 + 
-                    data_postintervention$sd_assuming_sem[data_postintervention$outcome == "anxiety" & data_postintervention$condition == "distinction"]^2 + 
-                    data_postintervention$sd_assuming_sem[data_postintervention$outcome == "stress" & data_postintervention$condition == "distinction"]^2)/3),
-      sd2 = sqrt((data_postintervention$sd_assuming_sem[data_postintervention$outcome == "discomfort" & data_postintervention$condition == "hierarchy"]^2 + 
-                    data_postintervention$sd_assuming_sem[data_postintervention$outcome == "anxiety" & data_postintervention$condition == "hierarchy"]^2 + 
-                    data_postintervention$sd_assuming_sem[data_postintervention$outcome == "stress" & data_postintervention$condition == "hierarchy"]^2)/3),
+      sd1 = sqrt((data_postintervention$sd[data_postintervention$outcome == "discomfort" & data_postintervention$condition == "distinction"]^2 +
+                    data_postintervention$sd[data_postintervention$outcome == "anxiety" & data_postintervention$condition == "distinction"]^2 +
+                    data_postintervention$sd[data_postintervention$outcome == "stress" & data_postintervention$condition == "distinction"]^2)/3),
+      sd2 = sqrt((data_postintervention$sd[data_postintervention$outcome == "discomfort" & data_postintervention$condition == "hierarchy"]^2 +
+                    data_postintervention$sd[data_postintervention$outcome == "anxiety" & data_postintervention$condition == "hierarchy"]^2 +
+                    data_postintervention$sd[data_postintervention$outcome == "stress" & data_postintervention$condition == "hierarchy"]^2)/3),
       n1 = sample_size,
       n2 = sample_size
     ) |>
@@ -315,7 +314,7 @@ es_assuming_sem_pooled <-
 ```{r fig.height=4, fig.width=5.5}
 
 data_combined <- 
-  es_assuming_sem_pooled |>
+  es_pooled |>
   mutate(color = c("original", "original", "original", "new")) |>
   select(outcome_measure, 
          m1,
@@ -391,57 +390,15 @@ Using Morris' adjustment (Morris, 2008, doi: 10.1177/1094428106291059)
 
 ```{r fig.height=4, fig.width=5.5}
 
-es_assuming_ci_baseline <- data_baseline |>
-  select(-sd_assuming_sem) |>
+es_baseline <- data_baseline |>
   rename(outcome_measure = outcome) |>
-  pivot_wider(names_from = condition, 
-              values_from = c(mean, sd_assuming_ci, n)) |>
+  pivot_wider(names_from = condition,
+              values_from = c(mean, sd, n)) |>
   group_by(outcome_measure) |>
-  do(t_test_from_descriptives(m1 = .$mean_distinction, 
+  do(t_test_from_descriptives(m1 = .$mean_distinction,
                               m2 = .$mean_hierarchy,
-                              sd1 = .$sd_assuming_ci_distinction,
-                              sd2 = .$sd_assuming_ci_hierarchy,
-                              n1 = .$n_distinction,
-                              n2 = .$n_hierarchy,
-                              alpha = 0.05)) |> # bonferroni corrections
-  ungroup() |>
-  mutate(outcome_measure = str_to_sentence(outcome_measure))
-
-es_assuming_ci_pooled_baseline <- 
-  bind_rows(
-    es_assuming_ci_baseline,
-    t_test_from_descriptives(
-      m1 = mean(c(data_baseline$mean[data_baseline$outcome == "discomfort" & data_baseline$condition == "distinction"],
-                  data_baseline$mean[data_baseline$outcome == "anxiety" & data_baseline$condition == "distinction"],
-                  data_baseline$mean[data_baseline$outcome == "stress" & data_baseline$condition == "distinction"])),
-      m2 = mean(c(data_baseline$mean[data_baseline$outcome == "discomfort" & data_baseline$condition == "hierarchy"],
-                  data_baseline$mean[data_baseline$outcome == "anxiety" & data_baseline$condition == "hierarchy"],
-                  data_baseline$mean[data_baseline$outcome == "stress" & data_baseline$condition == "hierarchy"])),
-      sd1 = sqrt((data_baseline$sd_assuming_ci[data_baseline$outcome == "discomfort" & data_baseline$condition == "distinction"]^2 + 
-                    data_baseline$sd_assuming_ci[data_baseline$outcome == "anxiety" & data_baseline$condition == "distinction"]^2 + 
-                    data_baseline$sd_assuming_ci[data_baseline$outcome == "stress" & data_baseline$condition == "distinction"]^2)/3),
-      sd2 = sqrt((data_baseline$sd_assuming_ci[data_baseline$outcome == "discomfort" & data_baseline$condition == "hierarchy"]^2 + 
-                    data_baseline$sd_assuming_ci[data_baseline$outcome == "anxiety" & data_baseline$condition == "hierarchy"]^2 + 
-                    data_baseline$sd_assuming_ci[data_baseline$outcome == "stress" & data_baseline$condition == "hierarchy"]^2)/3),
-      n1 = sample_size,
-      n2 = sample_size
-    ) |>
-      mutate(outcome_measure = "Distress (pooled)")
-  ) |>
-  mutate(outcome_measure = fct_relevel(outcome_measure, "Distress (pooled)", "Stress", "Anxiety", "Discomfort")) |>
-  select(outcome_measure, 
-         hedges_g)
-
-es_assuming_sem_baseline <- data_baseline |>
-  select(-sd_assuming_ci) |>
-  rename(outcome_measure = outcome) |>
-  pivot_wider(names_from = condition, 
-              values_from = c(mean, sd_assuming_sem, n)) |>
-  group_by(outcome_measure) |>
-  do(t_test_from_descriptives(m1 = .$mean_distinction, 
-                              m2 = .$mean_hierarchy,
-                              sd1 = .$sd_assuming_sem_distinction,
-                              sd2 = .$sd_assuming_sem_hierarchy,
+                              sd1 = .$sd_distinction,
+                              sd2 = .$sd_hierarchy,
                               n1 = .$n_distinction,
                               n2 = .$n_hierarchy,
                               alpha = 0.05)) |> # bonferroni corrections
@@ -451,9 +408,9 @@ es_assuming_sem_baseline <- data_baseline |>
   select(outcome_measure, 
          hedges_g)
 
-es_assuming_sem_pooled_baseline <- 
+es_pooled_baseline <- 
   bind_rows(
-    es_assuming_sem_baseline,
+    es_baseline,
     t_test_from_descriptives(
       m1 = mean(c(data_baseline$mean[data_baseline$outcome == "discomfort" & data_baseline$condition == "distinction"],
                   data_baseline$mean[data_baseline$outcome == "anxiety" & data_baseline$condition == "distinction"],
@@ -461,12 +418,12 @@ es_assuming_sem_pooled_baseline <-
       m2 = mean(c(data_baseline$mean[data_baseline$outcome == "discomfort" & data_baseline$condition == "hierarchy"],
                   data_baseline$mean[data_baseline$outcome == "anxiety" & data_baseline$condition == "hierarchy"],
                   data_baseline$mean[data_baseline$outcome == "stress" & data_baseline$condition == "hierarchy"])),
-      sd1 = sqrt((data_baseline$sd_assuming_sem[data_baseline$outcome == "discomfort" & data_baseline$condition == "distinction"]^2 + 
-                    data_baseline$sd_assuming_sem[data_baseline$outcome == "anxiety" & data_baseline$condition == "distinction"]^2 + 
-                    data_baseline$sd_assuming_sem[data_baseline$outcome == "stress" & data_baseline$condition == "distinction"]^2)/3),
-      sd2 = sqrt((data_baseline$sd_assuming_sem[data_baseline$outcome == "discomfort" & data_baseline$condition == "hierarchy"]^2 + 
-                    data_baseline$sd_assuming_sem[data_baseline$outcome == "anxiety" & data_baseline$condition == "hierarchy"]^2 + 
-                    data_baseline$sd_assuming_sem[data_baseline$outcome == "stress" & data_baseline$condition == "hierarchy"]^2)/3),
+      sd1 = sqrt((data_baseline$sd[data_baseline$outcome == "discomfort" & data_baseline$condition == "distinction"]^2 +
+                    data_baseline$sd[data_baseline$outcome == "anxiety" & data_baseline$condition == "distinction"]^2 +
+                    data_baseline$sd[data_baseline$outcome == "stress" & data_baseline$condition == "distinction"]^2)/3),
+      sd2 = sqrt((data_baseline$sd[data_baseline$outcome == "discomfort" & data_baseline$condition == "hierarchy"]^2 +
+                    data_baseline$sd[data_baseline$outcome == "anxiety" & data_baseline$condition == "hierarchy"]^2 +
+                    data_baseline$sd[data_baseline$outcome == "stress" & data_baseline$condition == "hierarchy"]^2)/3),
       n1 = sample_size,
       n2 = sample_size
     ) |>
@@ -477,7 +434,7 @@ es_assuming_sem_pooled_baseline <-
          hedges_g)
 
 data_combined_baseline <- 
-  es_assuming_sem_pooled_baseline |>
+  es_pooled_baseline |>
   mutate(color = c("original", "original", "original", "new")) |>
   select(outcome_measure, 
          hedges_g_baseline = hedges_g)

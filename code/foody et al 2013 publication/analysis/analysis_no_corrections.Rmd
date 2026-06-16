@@ -136,6 +136,20 @@ length(sample_size) == 1
 
 ```
 
+# Power implied by original study
+
+```{r}
+
+library(pwr)
+
+pwr.t.test(n = 18, 
+           power = 0.80, 
+           sig.level = 0.05,
+           type = "two.sample", 
+           alternative = "two.sided")
+
+```
+
 # Corrected *p* values for RM-ANOVAs
 
 *p* values extracted from text and corrected via Holm corrections

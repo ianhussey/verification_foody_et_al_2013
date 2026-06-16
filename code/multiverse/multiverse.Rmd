@@ -75,15 +75,10 @@ data_combined <-
       mutate(study = "original",
              multiple_testing_corrections = TRUE, 
              control_for_baseline = FALSE) |>
-      select(study, outcome_measure, control_for_baseline, multiple_testing_corrections, 
+      select(study, outcome_measure, control_for_baseline, multiple_testing_corrections,
              hedges_g, lower, upper),
-    read_csv("../foody et al 2013 publication/analysis/tables/table_2_bonferroni.csv",
-             show_col_types = FALSE) |>
-      mutate(study = "original",
-             multiple_testing_corrections = TRUE, 
-             control_for_baseline = FALSE) |>
-      select(study, outcome_measure, control_for_baseline, multiple_testing_corrections, 
-             hedges_g, lower, upper),
+    # table_2_bonferroni (pooled "Distress") is intentionally omitted: the pooled
+    # score is a single test and so is not subject to Bonferroni correction.
     read_csv("../foody et al 2013 publication/analysis/tables/table_3_bonferroni.csv",
              show_col_types = FALSE) |>
       mutate(study = "original",
@@ -120,13 +115,8 @@ data_combined <-
              control_for_baseline = FALSE) |>
       select(study, outcome_measure, control_for_baseline, multiple_testing_corrections,
              hedges_g, lower, upper),
-    read_csv("../foody et al 2015 publication/analysis/tables/table_2_bonferroni.csv",
-             show_col_types = FALSE) |>
-      mutate(study = "replication",
-             multiple_testing_corrections = TRUE,
-             control_for_baseline = FALSE) |>
-      select(study, outcome_measure, control_for_baseline, multiple_testing_corrections,
-             hedges_g, lower, upper),
+    # table_2_bonferroni (pooled "Distress") is intentionally omitted: the pooled
+    # score is a single test and so is not subject to Bonferroni correction.
     read_csv("../foody et al 2015 publication/analysis/tables/table_3_bonferroni.csv",
              show_col_types = FALSE) |>
       mutate(study = "replication",
